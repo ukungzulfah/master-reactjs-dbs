@@ -6,6 +6,7 @@ import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
 import ProtectedRoute from "./ProtectedRoute";
 import { useEffect } from "react";
+import MainLayoutChat from "../layouts/MainLayoutChat";
 
 const AppRoutes = () => {
   
@@ -24,7 +25,12 @@ const AppRoutes = () => {
       <Routes>
 
         {/* Routes dengan Layout */}
-        <Route path="/" element={<MainLayout />}>
+        <Route path="/" element={<MainLayoutChat />}>
+        
+        </Route>
+
+        {/* Routes dengan Layout */}
+        <Route path="/test" element={<MainLayout />}>
           <Route index element={<Home />} />
           {/* <Route index element={<Dashboard />} /> */}
           <Route 

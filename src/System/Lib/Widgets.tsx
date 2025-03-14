@@ -24,10 +24,11 @@ class Widgets {
 
             case 'root':
                 this.props.width = this.props.width || "100%";
-                this.props.height = this.props.height || "auto";
+                this.props.height = this.props.height || "100vh";
                 this.props.display = "flex";
                 break;
 
+            case 'click':
             case 'container':
                 switch (this.parent?.props.mode) {
                     case 'root':
