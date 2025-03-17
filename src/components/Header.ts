@@ -1,6 +1,4 @@
-import { Center, Click, Container, Expanded, Icon, Input, Rows, SizedBox } from "../System/Lib/Widgets";
-
-
+import { Center, Click, Container, Expanded, Icon, Rows, SizedBox, Text } from "../System/Lib/Widgets";
 
 const header = Container({
     height: 50,
@@ -13,6 +11,9 @@ const header = Container({
                 margin: 5,
                 radius: 20,
                 shadow: true,
+                child: Center({
+                    child: Text("Digital Solution", {color: "white", size: 18})
+                })
             }),
             Expanded({
                 child: Rows({
@@ -20,7 +21,7 @@ const header = Container({
                     children: [
                         Container({
                             color: "white",
-                            width: 300,
+                            width: 400,
                             margin: 7,
                             radius: 20,
                             child: Rows({

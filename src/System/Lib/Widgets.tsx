@@ -1,14 +1,14 @@
 import React, { createRef, RefObject, useRef, useState } from "react";
-// import ReactDOM from "react-dom"; // Untuk createPortal
-// import * as ReactDOMClient from "react-dom/client"; // Untuk createRoot
-// import { store } from "../../store";
-// import { Provider } from "react-redux";
+import ReactDOM from "react-dom";
+import * as ReactDOMClient from "react-dom/client";
+import { Provider } from "react-redux";
+import { store } from "../../store";
 
 class Widgets {
     props: PropsWidget;
     parent?: Widgets;
     portalRef: RefObject<HTMLElement | null>;
-    parcel: {[key: string]: any} = {};
+    parcel: { [key: string]: any } = {};
 
     constructor(props: PropsWidget) {
         this.props = props;
@@ -36,9 +36,12 @@ class Widgets {
                         this.props.height = this.props.height || "auto";
                         break;
 
+                    case 'click':
                     case 'stack':
                     case 'positioned':
+                    case 'container':
                     case 'expanded':
+                    case 'root-portal':
                         this.props.width = this.props.width || "100%";
                         this.props.height = this.props.height || "100%";
                         break;
@@ -58,16 +61,25 @@ class Widgets {
                 break;
 
             case 'rows':
-                this.props.flex = "1";
-                this.props.display = "flex";
-                this.props.flexDirection = "row";
                 switch (this.parent?.props.mode) {
                     case 'singlechildscrollview':
                         this.props.width = "fit-content";
                         this.props.height = this.props.height || "100%";
                         break;
 
+                    case 'container':
+                        this.props.width = "100%";
+                        this.props.height = this.props.height || "inherit";
+                        break;
+
+                    case 'column':
+                        this.props.width = "100%";
+                        break;
+
                     default:
+                        this.props.flex = "1";
+                        this.props.display = "flex";
+                        this.props.flexDirection = "row";
                         this.props.width = this.props.width || "100%";
                         this.props.height = this.props.height || "100%";
                         break;
@@ -77,17 +89,24 @@ class Widgets {
             case 'wrap':
             case 'stack':
             case 'column':
-                this.props.flex = "1";
-                this.props.width = this.props.width || "100%";
                 switch (this.parent?.props.mode) {
+
                     case 'singlechildscrollview':
+                        this.props.flex = "1";
                         this.props.height = "fit-content";
                         break;
 
+                    case 'rows':
+                        this.props.width = this.props.width || "auto";
+                        this.props.height = this.props.height || "100%";
+                        break;
+
                     default:
+                        this.props.flex = "1";
                         this.props.height = this.props.height || "100%";
                         break;
                 }
+                this.props.width = this.props.width || "100%";
                 break;
 
             case 'expanded':
@@ -103,17 +122,30 @@ class Widgets {
                 }
                 break;
 
+            case 'input':
+                this.props.padding = 5;
+                this.props.border = '0';
+                this.props.outline = '0';
+                this.props.color = 'white';
+                switch (this.parent?.props.mode) {
+                    default:
+                        this.props.width = this.props.width || "-webkit-fill-available";
+                        this.props.height = this.props.height || "-webkit-fill-available";
+                        break;
+                }
+                break;
+
             default:
                 break;
         }
     }
 
-    handleMouseDown = () => {};
-    handleMouseUp = () => {};
-    onMouseEnter() {}
-    onMouseLeave() {}
+    handleMouseDown = () => { };
+    handleMouseUp = () => { };
+    onMouseEnter() { }
+    onMouseLeave() { }
 
-    click(clickFunction: Function) {
+    click() {
         this.handleMouseDown = () => {
             if (!this.portalRef.current) return;
             this.portalRef.current.style.transform = 'scale(0.95)';
@@ -124,7 +156,7 @@ class Widgets {
             if (!this.portalRef.current) return;
             this.portalRef.current.style.transform = 'scale(1)';
             this.portalRef.current.style.boxShadow = 'unset';
-            clickFunction.apply(this.parcel, [this]);
+            // clickFunction.apply(this.parcel, [this]);
         };
         this.props.onMouseUp = this.handleMouseUp;
         // this.onMouseEnter = () => {
@@ -148,10 +180,17 @@ class Widgets {
     }
 
     portal: any;
-    builder(data?: {[key: string]: any}) {
+    builder(data?: { [key: string]: any }) {
         this.parcel = data || {};
         let child;
         this.setupDimention();
+
+        if (this.props.modal) {
+            this.props.position = "fixed";
+            this.props.top = 0;
+            this.props.left = 0;
+            this.props.fullscreen = true;
+        }
 
         if (this.props.fullscreen) {
             this.props.width = "100%";
@@ -219,16 +258,16 @@ class Widgets {
         }
 
         if (this.props.mode === "icon" || this.props.mode === "text") {
-            if(this.props.size) {
+            if (this.props.size) {
                 this.props.fontSize = this.props.size;
             }
-            if(this.props.color) {
+            if (this.props.color) {
                 this.props.fontColor = this.props.color;
                 this.props.color = undefined;
             }
         }
 
-        if(this.props.center) {
+        if (this.props.center) {
             this.props.display = "flex";
             this.props.flex = "1";
             this.props.justifyContent = "center";
@@ -251,7 +290,7 @@ class Widgets {
         };
 
         if (this.props.mode === "input") {
-            if(this.props.placeholder) {
+            if (this.props.placeholder) {
                 configuration.placeholder = this.props.placeholder;
             }
         }
@@ -267,55 +306,115 @@ class Widgets {
         }
 
         if (this.props.mode === "click") {
-            this.click(this.props.click!);
+            configuration.onClick = (e: any) => {
+                e.stopPropagation();
+                if (this.props.click) {
+                    this.props.click(e);
+                }
+            };
+            this.click();
+        }
+
+        if (this.props.onClick) {
+            configuration.onClick = (e: any) => {
+                e.stopPropagation();
+                if (this.props.onClick) {
+                    this.props.onClick(e);
+                }
+            };
         }
 
         if (this.props.onMouseDown) {
-            configuration.onMouseDown = this.props.onMouseDown;
+            configuration.onMouseDown = (e: any) => {
+                e.stopPropagation();
+                if (this.props.onMouseDown) {
+                    this.props.onMouseDown(e);
+                }
+            };
         }
 
         if (this.props.onMouseMove) {
-            configuration.onMouseMove = this.props.onMouseMove;
+            configuration.onMouseMove = (e: any) => {
+                e.stopPropagation();
+                if (this.props.onMouseMove) {
+                    this.props.onMouseMove(e);
+                }
+            };
         }
 
         if (this.props.onMouseUp) {
-            configuration.onMouseUp = this.props.onMouseUp;
+            configuration.onMouseUp = (e: any) => {
+                e.stopPropagation();
+                if (this.props.onMouseUp) {
+                    this.props.onMouseUp(e);
+                }
+            };
         }
 
         if (this.props.onMouseEnter) {
-            configuration.onMouseEnter = this.props.onMouseEnter;
+            configuration.onMouseEnter = (e: any) => {
+                e.stopPropagation();
+                if (this.props.onMouseEnter) {
+                    this.props.onMouseEnter(e);
+                }
+            };
         }
 
         if (this.props.onMouseLeave) {
             configuration.onMouseLeave = this.props.onMouseLeave;
         }
 
-        if(this.props.mode === "root-portal") {
-            // const portalChild = React.createElement(
-            //     this.props.type!,
-            //     configuration,
-            //     child
-            // );
-
-            // this.portal = ReactDOMClient.createRoot(document.getElementById("helper")!);
-            // this.portal.render(ReactDOM.createPortal(
-            //     // <Provider store={store}>
-            //     //     {portalChild}
-            //     // </Provider>,
-            //     portalChild,
-            //     document.body,
-            //     this.props.key || `portal-${i}-${Math.round(Math.random() * 1000000)}`
-            // ));
-            // this.portal.unmount();
-        } else {
-            this.portal = React.createElement(
+        if (this.props.mode === "root-portal") {
+            const portalChild = React.createElement(
                 this.props.type!,
                 configuration,
                 child
             );
+            const helper = document.createElement("div");
+            document.body.appendChild(helper);
+            this.portal = ReactDOMClient.createRoot(helper);
+            // this.portal.render(ReactDOM.createPortal(
+            //     portalChild,
+            //     document.body,
+            //     this.props.key || `portal-${Math.round(Math.random() * 1000000)}`
+            // ));
+            this.portal.render(
+                <Provider store={store}>
+                    {ReactDOM.createPortal(
+                        portalChild,
+                        document.body,
+                        this.props.key || `portal-${Math.round(Math.random() * 1000000)}`
+                    )}
+                </Provider>
+            );
+
+            this.portal.unMounting = () => {
+                this.portal.unmount();
+                document.body.removeChild(helper);
+            };
+        } else {
+            if(typeof this.props.type === "string") {
+                this.portal = React.createElement(
+                    this.props.type!,
+                    configuration,
+                    child
+                );
+            } else {
+                const defMui = Object.assign(configuration, this.props.mui);
+                this.portal = React.createElement(
+                    this.props.type!,
+                    defMui,
+                    child
+                );
+            }
         }
 
         return this.portal;
+    }
+
+    buildPortal() {
+        this.props.mode = "root-portal";
+        return this.builder();
     }
 }
 
@@ -337,20 +436,21 @@ export function Button(text: string, props: PropsWidget = {}) {
     props.backgroundColor = props.backgroundColor || "#007bff";
     props.color = props.color || "#ffffff";
     props.fontColor = props.fontColor || "white";
+    props.width = props.width || "unset";
     props.child = props.child || Center({
         child: props.icon ? Rows({
             center: true,
             children: [
-                Icon(props.icon, {color: props.fontColor}),
+                Icon(props.icon, { color: props.fontColor, size:20 }),
                 SizedBox({ width: props.text ? 10 : 0 }),
-                Text(props.text, {color: props.fontColor})
+                Text(props.text, { color: props.fontColor, size:14 })
             ]
-        }) : Text(props.text, {color: props.fontColor})
+        }) : Text(props.text, { color: props.fontColor })
     });
     return Click(props);
 }
 
-export function Icon(name: string, props: PropsWidget = {}) {
+export function Icon(name: any, props: PropsWidget = {}) {
     props.mode = "icon";
     props.type = "span";
     props.iconName = name;
@@ -430,45 +530,45 @@ export function Draggable(props: PropsWidget = {}) {
     const [dragging, setDragging] = useState(false);
     const [position, setPosition] = useState({ x: 50, y: 50 }); // ✅ Simpan posisi di state
     const offset = useRef({ x: 0, y: 0 });
-  
+
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!boxRef.current) return;
-  
-      setDragging(true);
-      offset.current = {
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      };
-    };
-  
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!dragging) return;
-  
-      // Ambil ukuran viewport
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-  
-      // Ambil ukuran elemen
-      const boxWidth = boxRef.current?.offsetWidth || 0;
-      const boxHeight = boxRef.current?.offsetHeight || 0;
-  
-      // Hitung posisi baru
-      let newX = e.clientX - offset.current.x;
-      let newY = e.clientY - offset.current.y;
-  
-      // Cek batas agar elemen tidak keluar dari layar
-      newX = Math.max(0, Math.min(windowWidth - boxWidth, newX));
-      newY = Math.max(0, Math.min(windowHeight - boxHeight, newY));
-  
-      // ✅ Update posisi di state agar tidak hilang setelah drag selesai
-      setPosition({ x: newX, y: newY });
-    };
-  
-    const handleMouseUp = () => {
-      setDragging(false);
+        if (!boxRef.current) return;
+
+        setDragging(true);
+        offset.current = {
+            x: e.clientX - position.x,
+            y: e.clientY - position.y
+        };
     };
 
-    
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!dragging) return;
+
+        // Ambil ukuran viewport
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        // Ambil ukuran elemen
+        const boxWidth = boxRef.current?.offsetWidth || 0;
+        const boxHeight = boxRef.current?.offsetHeight || 0;
+
+        // Hitung posisi baru
+        let newX = e.clientX - offset.current.x;
+        let newY = e.clientY - offset.current.y;
+
+        // Cek batas agar elemen tidak keluar dari layar
+        newX = Math.max(0, Math.min(windowWidth - boxWidth, newX));
+        newY = Math.max(0, Math.min(windowHeight - boxHeight, newY));
+
+        // ✅ Update posisi di state agar tidak hilang setelah drag selesai
+        setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+        setDragging(false);
+    };
+
+
     props.left = position.x;
     props.top = position.y;
 
@@ -522,6 +622,7 @@ export function SizedBox(props: PropsWidget = {}) {
 export function Click(props: PropsWidget = {}) {
     props.mode = "click";
     props.type = "div";
+    props.cursor = "pointer";
     return new Widgets(props);
 }
 
@@ -578,7 +679,7 @@ export function Center(props: PropsWidget = {}) {
     props.type = "div";
     props.display = "flex";
     props.flex = "1";
-    props.justifyContent = "center";
+    props.justifyContent = props.justifyContent || "center";
     props.alignItems = "center";
     return new Widgets(props);
 }
@@ -587,14 +688,73 @@ export function Positioned(props: PropsWidget = {}) {
     props.mode = "positioned";
     props.type = "div";
     props.position = "absolute";
+    // props.top = 0;
+    // props.left = 0;
+    // props.width = "100%";
+    // props.height = "100%";
     return new Widgets(props);
 }
 
-export function Portal(props: PropsWidget = {}) {
-    props.mode = "root-portal";
-    props.type = "div";
-    props.position = "absolute";
-    return new Widgets(props);
+export function Modal(props: PropsWidget = {}) {
+    const defaultConfig: any = {
+        top: props.top || 0,
+        left: props.left || 0,
+        color: props.color || "transparent",
+        width: props.width || "50%",
+        height: props.height || "80%",
+        child: props.child,
+    };
+    
+    const normalizeSize = (value: string | number): string => {
+        const stringValue = value.toString().trim();
+        return /\d(px|%)$/.test(stringValue) ? stringValue : `${stringValue}px`;
+    };
+    
+    defaultConfig.width = normalizeSize(defaultConfig.width);
+    defaultConfig.height = normalizeSize(defaultConfig.height);
+    
+    if(props.fullscreen) {
+        defaultConfig.top = 0;
+        defaultConfig.left = 0;
+        defaultConfig.width = "100%";
+        defaultConfig.height = "100%";
+    }
+
+    defaultConfig.top = `calc((100% - ${defaultConfig.height}) / 2)`;
+    defaultConfig.left = `calc((100% - ${defaultConfig.width}) / 2)`;
+    defaultConfig.transform = `translate(-${defaultConfig.top}, -${defaultConfig.left})`;
+
+    const portal = Root({
+        modal: true,
+        child: Stack({
+            children: [
+                Container({
+                    onClick: () => {
+                        cleanup();
+                    },
+                    color: "#0000007d",
+                }),
+                Positioned(defaultConfig)
+            ]
+        })
+    }).buildPortal();
+
+    const handleEscape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+            cleanup();
+        }
+    };
+
+    const cleanup = () => {
+        portal?.unMounting();
+        document.removeEventListener('keydown', handleEscape);
+        if(props.onClose) {
+            props.onClose();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    return portal;
 }
 
 interface PropsWidget {
@@ -602,13 +762,17 @@ interface PropsWidget {
     key?: string;
     text?: string;
     mode?: string;
-    type?: string;
+    type?: any;
+    mui?: any;
     click?: Function;
+    onClick?: Function;
+    onClose?: Function;
     onMouseDown?: any;
     onMouseMove?: any;
     onMouseEnter?: any;
     onMouseLeave?: any;
     onMouseUp?: any;
+    variant?: any;
     child?: Widgets;
     childReact?: React.ReactNode;
     direction?: string;
@@ -676,17 +840,22 @@ interface PropsWidget {
     cursor?: string;
     transition?: string;
     animation?: string;
-    transform?: string;
+    transform?: any;
     whiteSpace?: string;
     shadow?: boolean;
     fullscreen?: boolean;
+    modal?: boolean;
     userSelect?: string;
     animateEffect?: string;
     animateValue?: number;
     src?: string;
     iconName?: string;
     center?: boolean;
-    icon?: string;
+    icon?: any;
+    borderTopLeftRadius?: number;
+    borderTopRightRadius?: number;
+    borderBottomLeftRadius?: number;
+    borderBottomRightRadius?: number;
 }
 
 function applyStyles(style: any, option: any) {
@@ -792,6 +961,12 @@ function applyStyles(style: any, option: any) {
     if (option.transform) style.transform = option.transform;
 
     if (option.whiteSpace) style.whiteSpace = option.whiteSpace;
+
+    // add radius
+    if (option.borderTopLeftRadius) style.borderTopLeftRadius = option.borderTopLeftRadius;
+    if (option.borderTopRightRadius) style.borderTopRightRadius = option.borderTopRightRadius;
+    if (option.borderBottomLeftRadius) style.borderBottomLeftRadius = option.borderBottomLeftRadius;
+    if (option.borderBottomRightRadius) style.borderBottomRightRadius = option.borderBottomRightRadius;
 
     return style;
 }
