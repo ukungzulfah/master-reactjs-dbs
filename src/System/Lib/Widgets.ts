@@ -3,6 +3,8 @@ import ReactDOM from "react-dom";
 import * as ReactDOMClient from "react-dom/client";
 import { Provider } from "react-redux";
 import { store } from "../../store";
+import * as mui from '@mui/material';
+import notification from '../../assets/icon/notification.png';
 
 class Widgets {
     props: PropsWidget;
@@ -122,6 +124,21 @@ class Widgets {
                 }
                 break;
 
+            case 'space':
+                switch (this.parent?.props.mode) {
+                    case 'column':
+                        this.props.height = this.props.length;
+                        break;
+
+                    case 'rows':
+                        this.props.width = this.props.length;
+                        break;
+
+                    default:
+                        break;
+                }
+                break;
+
             case 'input':
                 this.props.padding = 5;
                 this.props.border = '0';
@@ -156,22 +173,8 @@ class Widgets {
             if (!this.portalRef.current) return;
             this.portalRef.current.style.transform = 'scale(1)';
             this.portalRef.current.style.boxShadow = 'unset';
-            // clickFunction.apply(this.parcel, [this]);
         };
         this.props.onMouseUp = this.handleMouseUp;
-        // this.onMouseEnter = () => {
-        //     if (!this.portalRef.current) return;
-        //     this.props.backgroundColor = this.portalRef.current.style.backgroundColor;
-        //     this.portalRef.current.style.backgroundColor = '#0056b3';
-        //     this.portalRef.current.style.color = 'white';
-        // };
-        // this.props.onMouseEnter = this.onMouseEnter;
-        // this.onMouseLeave = () => {
-        //     if (!this.portalRef.current) return;
-        //     this.portalRef.current.style.backgroundColor = this.props.backgroundColor || "unset";
-        //     this.portalRef.current.style.color = 'black';
-        // };
-        // this.props.onMouseLeave = this.onMouseLeave;
         return this;
     }
 
@@ -206,14 +209,62 @@ class Widgets {
             child = this.props.text;
         }
 
+        if (this.props.mode === "FormControl") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    item.setKey(`FormControl-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `FormControl-${i}` }, item);
+                }
+            });
+        }
+
+        if (this.props.mode === "Select") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    item.setKey(`Select-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `Select-${i}` }, item);
+                }
+            });
+        }
+
+        if (this.props.mode === "ButtonGroup") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    item.setKey(`ButtonGroup-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `ButtonGroup-${i}` }, item);
+                }
+            });
+        }
+
+        if (this.props.mode === "Menu") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    item.setKey(`Menu-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `Menu-${i}` }, item);
+                }
+            });
+        }
+
         if (this.props.mode === "rows") {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    item.setKey(`column-${i}`)
+                    item.setKey(`rows-${i}`)
                     return item.builder(data);
                 } else {
-                    return <React.Fragment key={`column-${i}`}>{item}</React.Fragment>;
+                    return React.createElement(React.Fragment, { key: `rows-${i}` }, item);
                 }
             });
         }
@@ -225,18 +276,18 @@ class Widgets {
                     item.setKey(`column-${i}`)
                     return item.builder(data);
                 } else {
-                    return <React.Fragment key={`column-${i}`}>{item}</React.Fragment>;
+                    return React.createElement(React.Fragment, { key: `column-${i}` }, item);
                 }
             });
         }
 
         if (this.props.mode === "wrap") {
-            child = this.props.children?.filter(x => x).map((item) => {
+            child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
                     return item.builder(data);
                 } else {
-                    return <React.Fragment key={this.props.key}>{item}</React.Fragment>;
+                    return React.createElement(React.Fragment, { key: `wrap-${i}` }, item);
                 }
             });
         }
@@ -248,7 +299,7 @@ class Widgets {
                     item.setKey(`column-${i}`)
                     return item.builder(data);
                 } else {
-                    return <React.Fragment key={`column-${i}`}>{item}</React.Fragment>;
+                    return React.createElement(React.Fragment, { key: `stack-${i}` }, item);
                 }
             });
         }
@@ -288,6 +339,17 @@ class Widgets {
             style: styles,
             "data-mode": this.props.type!,
         };
+
+        if(this.props.onContextMenu) {
+            // onContextMenu
+            configuration.onContextMenu = (e: any) => {
+                e.preventDefault();
+                if (this.props.onContextMenu) {
+                    this.props.onContextMenu(e);
+                    return false;
+                }
+            }
+        }
 
         if (this.props.mode === "input") {
             if (this.props.placeholder) {
@@ -373,19 +435,15 @@ class Widgets {
             const helper = document.createElement("div");
             document.body.appendChild(helper);
             this.portal = ReactDOMClient.createRoot(helper);
-            // this.portal.render(ReactDOM.createPortal(
-            //     portalChild,
-            //     document.body,
-            //     this.props.key || `portal-${Math.round(Math.random() * 1000000)}`
-            // ));
             this.portal.render(
-                <Provider store={store}>
-                    {ReactDOM.createPortal(
-                        portalChild,
-                        document.body,
-                        this.props.key || `portal-${Math.round(Math.random() * 1000000)}`
-                    )}
-                </Provider>
+                ReactDOM.createPortal(
+                    React.createElement(
+                        Provider,
+                        { store: store, children: portalChild }
+                    ),
+                    helper,
+                    this.props.key || `portal-${Math.round(Math.random() * 1000000)}`
+                )
             );
 
             this.portal.unMounting = () => {
@@ -393,7 +451,7 @@ class Widgets {
                 document.body.removeChild(helper);
             };
         } else {
-            if(typeof this.props.type === "string") {
+            if (typeof this.props.type === "string") {
                 this.portal = React.createElement(
                     this.props.type!,
                     configuration,
@@ -441,9 +499,9 @@ export function Button(text: string, props: PropsWidget = {}) {
         child: props.icon ? Rows({
             center: true,
             children: [
-                Icon(props.icon, { color: props.fontColor, size:20 }),
+                Icon(props.icon, { color: props.fontColor, size: 20 }),
                 SizedBox({ width: props.text ? 10 : 0 }),
-                Text(props.text, { color: props.fontColor, size:14 })
+                Text(props.text, { color: props.fontColor, size: 14 })
             ]
         }) : Text(props.text, { color: props.fontColor })
     });
@@ -473,8 +531,8 @@ export function Animated(props: PropsWidget = {}) {
         let startWidth = value;
         let step = 0;
 
-        const duration = 300; // Durasi animasi (300ms)
-        const totalFrames = duration / 16; // 16ms per frame (~60FPS)
+        const duration = 300;
+        const totalFrames = duration / 16;
 
         const stepAnimation = () => {
             step++;
@@ -492,9 +550,9 @@ export function Animated(props: PropsWidget = {}) {
     };
     const handleClick = () => {
         if (isExpanded) {
-            animateWidth(120); // Kembali ke ukuran semula
+            animateWidth(120);
         } else {
-            animateWidth(170); // Tambah width 50px
+            animateWidth(170);
         }
         setIsExpanded(!isExpanded);
     };
@@ -504,31 +562,12 @@ export function Animated(props: PropsWidget = {}) {
     props.type = "div";
     props.onMouseUp = handleClick;
     return new Widgets(props);
-    // return (
-    //   <div
-    //     onClick={handleClick}
-    //     style={{
-    //       width: `${size.width}px`,
-    //       height: `${size.height}px`,
-    //       backgroundColor: "blue",
-    //       color: "white",
-    //       display: "flex",
-    //       alignItems: "center",
-    //       justifyContent: "center",
-    //       cursor: "pointer",
-    //       userSelect: "none",
-    //       borderRadius: "10px"
-    //     }}
-    //   >
-    //     Click Me!
-    //   </div>
-    // );
 };
 
 export function Draggable(props: PropsWidget = {}) {
     const boxRef = useRef<HTMLDivElement | null>(null);
     const [dragging, setDragging] = useState(false);
-    const [position, setPosition] = useState({ x: 50, y: 50 }); // ✅ Simpan posisi di state
+    const [position, setPosition] = useState({ x: 50, y: 50 });
     const offset = useRef({ x: 0, y: 0 });
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -543,24 +582,14 @@ export function Draggable(props: PropsWidget = {}) {
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!dragging) return;
-
-        // Ambil ukuran viewport
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
-
-        // Ambil ukuran elemen
         const boxWidth = boxRef.current?.offsetWidth || 0;
         const boxHeight = boxRef.current?.offsetHeight || 0;
-
-        // Hitung posisi baru
         let newX = e.clientX - offset.current.x;
         let newY = e.clientY - offset.current.y;
-
-        // Cek batas agar elemen tidak keluar dari layar
         newX = Math.max(0, Math.min(windowWidth - boxWidth, newX));
         newY = Math.max(0, Math.min(windowHeight - boxHeight, newY));
-
-        // ✅ Update posisi di state agar tidak hilang setelah drag selesai
         setPosition({ x: newX, y: newY });
     };
 
@@ -636,16 +665,16 @@ export function Text(text: string, props: PropsWidget = {}) {
 export function Expanded(props: PropsWidget = {}) {
     props.mode = "expanded";
     props.type = "div";
-    props.display = "flex"; // Default untuk Center
-    props.flex = "1"; // Memastikan elemen mengambil sisa ruang yang tersedia
+    props.display = "flex";
+    props.flex = "1";
     return new Widgets(props);
 }
 
 export function Column(props: PropsWidget = {}) {
     props.mode = "column";
     props.type = "div";
-    props.display = "flex"; // Default untuk Rows
-    props.flexDirection = "column"; // Columns akan sejajar secara vertikal
+    props.display = "flex";
+    props.flexDirection = "column";
     return new Widgets(props);
 }
 
@@ -688,41 +717,11 @@ export function Positioned(props: PropsWidget = {}) {
     props.mode = "positioned";
     props.type = "div";
     props.position = "absolute";
-    // props.top = 0;
-    // props.left = 0;
-    // props.width = "100%";
-    // props.height = "100%";
     return new Widgets(props);
 }
 
 export function Modal(props: PropsWidget = {}) {
-    const defaultConfig: any = {
-        top: props.top || 0,
-        left: props.left || 0,
-        color: props.color || "transparent",
-        width: props.width || "50%",
-        height: props.height || "80%",
-        child: props.child,
-    };
-    
-    const normalizeSize = (value: string | number): string => {
-        const stringValue = value.toString().trim();
-        return /\d(px|%)$/.test(stringValue) ? stringValue : `${stringValue}px`;
-    };
-    
-    defaultConfig.width = normalizeSize(defaultConfig.width);
-    defaultConfig.height = normalizeSize(defaultConfig.height);
-    
-    if(props.fullscreen) {
-        defaultConfig.top = 0;
-        defaultConfig.left = 0;
-        defaultConfig.width = "100%";
-        defaultConfig.height = "100%";
-    }
-
-    defaultConfig.top = `calc((100% - ${defaultConfig.height}) / 2)`;
-    defaultConfig.left = `calc((100% - ${defaultConfig.width}) / 2)`;
-    defaultConfig.transform = `translate(-${defaultConfig.top}, -${defaultConfig.left})`;
+    const defaultConfig = getDefaultConfig(props);
 
     const portal = Root({
         modal: true,
@@ -748,7 +747,7 @@ export function Modal(props: PropsWidget = {}) {
     const cleanup = () => {
         portal?.unMounting();
         document.removeEventListener('keydown', handleEscape);
-        if(props.onClose) {
+        if (props.onClose) {
             props.onClose();
         }
     };
@@ -757,14 +756,457 @@ export function Modal(props: PropsWidget = {}) {
     return portal;
 }
 
+export function Space(length: number) {
+    const props: PropsWidget = {
+        length,
+        mode: "space",
+        type: "div"
+    };
+    return new Widgets(props);
+}
+
+export function ButtonMui(props: PropsWidget = {}) {
+    props.mode = 'ButtonMui';
+    props.type = mui.Button;
+    return new Widgets(props);
+}
+
+export function Menu(e: any, props: PropsWidget = {}) {
+    props.mode = 'Menu';
+    props.type = mui.Menu;
+    props.mui = {
+        anchorReference: props.anchorPosition ? "anchorPosition" : undefined,
+        anchorPosition: props.anchorPosition || null,
+        anchorEl: e.currentTarget,
+        open: true,
+        onClose: () => {
+            cleanup();
+        }
+    };
+    const element = new Widgets(props);
+
+    const portal = Root({
+        modal: false,
+        childReact: element.builder()
+    }).buildPortal();
+
+    const handleEscape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+            cleanup();
+        }
+    };
+
+    const cleanup = () => {
+        portal?.unMounting();
+        document.removeEventListener('keydown', handleEscape);
+        if (props.onClose) {
+            props.onClose();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return portal;
+}
+
+export function ListItemText(props: PropsWidget = {}) {
+    props.mode = 'ListItemText';
+    props.type = mui.ListItemText;
+    return new Widgets(props);
+}
+
+export function MenuItem(props: PropsWidget = {}) {
+    props.mode = 'MenuItem';
+    props.type = mui.MenuItem;
+    props.inset = true;
+    return new Widgets({
+        ...props,
+        mui: {
+            value: props.value || '',
+        }
+    });
+}
+
+export function ListItemIcon(props: PropsWidget = {}) {
+    props.mode = 'ListItemIcon';
+    props.type = mui.ListItemIcon;
+    return new Widgets(props);
+}
+
+export function Divider(props: PropsWidget = {}) {
+    props.mode = 'Divider';
+    props.type = mui.Divider;
+    return new Widgets(props);
+}
+
+export function ButtonGroup(props: PropsWidget = {}) {
+    props.mode = 'ButtonGroup';
+    props.type = mui.ButtonGroup;
+    return new Widgets(props);
+}
+
+export function Checkbox(props: PropsWidget = {}) {
+    props.mode = 'Checkbox';
+    props.type = mui.Checkbox;
+    return new Widgets({
+        ...props,
+        mui: {
+            checked: props.checked || false,
+            disabled: props.disabled || false,
+        }
+    });
+}
+
+export function Fab(props: PropsWidget = {}) {
+    props.mode = 'Fab';
+    props.type = mui.Fab;
+    return new Widgets(props);
+}
+
+export function InputLabel(props: PropsWidget = {}) {
+    props.mode = 'InputLabel';
+    props.type = mui.InputLabel;
+    return new Widgets(props);
+}
+
+export function FormControl(props: PropsWidget = {}) {
+    props.mode = 'FormControl';
+    props.type = mui.FormControl;
+    return new Widgets({
+        ...props,
+        mui: {
+            fullWidth: true,
+        }
+    });
+}
+
+export function Select(props: PropsWidget = {}) {
+    props.mode = 'Select';
+    props.type = mui.Select;
+    const select = new Widgets({
+        ...props,
+        mui: {
+            value: props.value || '',
+            onChange: props.onChange || (() => { }),
+        }
+    });
+
+    return FormControl({
+        ...props,
+        children: [
+            InputLabel({
+                child: Text(props.label || 'Select')
+            }),
+            select,
+        ]
+    });
+}
+
+export function Slider(props: PropsWidget = {}) {
+    props.mode = 'Slider';
+    props.type = mui.Slider;
+    return new Widgets({
+        ...props,
+        mui: {
+            disabled: props.disabled || false,
+            defaultValue: props.defaultValue || '',
+            onChange: props.onChange || (() => { }),
+            value: props.value || '',
+        }
+    });
+}
+
+export function Switch(props: PropsWidget = {}) {
+    props.mode = 'Switch';
+    props.type = mui.Switch;
+    return new Widgets({
+        ...props,
+        mui: {
+            disabled: props.disabled || false,
+            defaultValue: props.defaultValue || '',
+            onChange: props.onChange || (() => { }),
+            value: props.value || '',
+        }
+    });
+}
+
+export function TextField(props: PropsWidget = {}) {
+    props.mode = 'TextField';
+    props.type = mui.TextField;
+    return new Widgets({
+        ...props,
+        mui: {
+            disabled: props.disabled || false,
+            variant: props.variant || 'outlined',
+            label: props.label || '',
+            onChange: props.onChange || (() => { }),
+            value: props.value || '',
+        }
+    });
+}
+
+export function CircularProgress(props: PropsWidget = {}) {
+    props.mode = 'CircularProgress';
+    props.type = mui.CircularProgress;
+    return new Widgets({
+        ...props,
+        mui: {
+        }
+    });
+}
+
+export function Skeleton(props: PropsWidget = {}) {
+    props.mode = 'Skeleton';
+    props.type = mui.Skeleton;
+    return new Widgets({
+        ...props,
+        mui: {
+            variant: props.variant || 'rectangular',
+            animation: props.animation || 'wave',
+        }
+    });
+}
+
+export function Fragment(props: PropsWidget = {}) {
+    props.mode = 'Fragment';
+    props.type = React.Fragment;
+    return new Widgets(props);
+}
+
+export function Snackbar(props: PropsWidget = {}) {
+    props.mode = 'Snackbar';
+    props.type = mui.Snackbar;
+    const element = new Widgets({
+        ...props,
+        mui: {
+            open: true,
+            autoHideDuration: props.autoHideDuration || 3000,
+            onClose: props.onClose || (() => {
+                portal.unMounting();
+            }),
+            message: props.message || 'Snackbar',
+            title: props.title || '',
+            action: props.action || React.createElement(React.Fragment, null, null),
+            anchorOrigin: props.anchorOrigin || {
+                vertical: "bottom",
+                horizontal: "right"
+            }
+        },
+        child: Container({
+            color: "white",
+            width: 350,
+            radius: 10,
+            shadow: true,
+            onClick: () => {
+                if(!props.onAccept) {
+                    portal.unMounting();
+                }
+            },
+            child: Stack({
+                display: "flex",
+                children: [
+                    Container({
+                        padding: 10,
+                        child: Column({
+                            children: [
+                                Rows({
+                                    children: [
+                                        Container({
+                                            width: 50,
+                                            height: 50,
+                                            background: `url(${notification}) no-repeat center center`,
+                                            backgroundSize: 'cover',
+                                        }),
+                                        Space(10),
+                                        Column({
+                                            children: [
+                                                Text(props.title || 'Snackbar', { fontWeight: "bold", size: 14 }),
+                                                props.message ? Text(props.message, { size: 12 }) : SizedBox(),
+                                            ]
+                                        })
+                                    ]
+                                }),
+                                Space(props.onAccept ? 10 : 0),
+                                !props.onAccept ? Space(0) : Container({
+                                    height: 35,
+                                    child: Rows({
+                                        children: [
+                                            Expanded(),
+                                            Button("Cancel", {paddingLeft: 20, paddingRight:20, backgroundColor:"red", width: 50, onClick: () => {
+                                                portal.unMounting();
+                                            }}),
+                                            Space(10),
+                                            Button("OK", {paddingLeft: 20, paddingRight:20, backgroundColor:"green", width: 50, onClick: () => {
+                                                portal.unMounting();
+                                                if(props.onAccept) {
+                                                    props.onAccept!();
+                                                }
+                                            }}),
+                                        ]
+                                    })
+                                })
+                            ]
+                        })
+                    }),
+                ]
+            })
+        })
+    });
+
+    const portal = Root({
+        modal: false,
+        childReact: element.builder()
+    }).buildPortal();
+
+    return portal;
+}
+
+export function Confirm(props: PropsWidget = {}) {
+    return Snackbar({
+      title: props.title || 'Confirm',
+      message: props.message || 'Are you sure?',
+      anchorOrigin: {
+          vertical: "top",
+          horizontal: "center"
+      },
+      onAccept: () => {
+        if(props.onAccept) {
+            props.onAccept();
+        }
+      }
+    });
+}
+
+export function Alert(props: PropsWidget = {}) {
+    const portal = Modal({
+        width: 300,
+        height: 100,
+        child: Container({
+            color: "white",
+            radius: 10,
+            shadow: true,
+            padding: 10,
+            child: Column({
+                children: [
+                    Expanded({
+                        child: Rows({
+                            children: [
+                                Container({
+                                    width: 50,
+                                    height: 50,
+                                    background: `url(${notification}) no-repeat center center`,
+                                    backgroundSize: 'cover',
+                                }),
+                                Space(10),
+                                Column({
+                                    children: [
+                                        Space(10),
+                                        Text(props.title || 'Alert', { fontWeight: "bold", size: 14 }),
+                                        props.message ? Text(props.message, { size: 12 }) : SizedBox(),
+                                    ]
+                                }),
+                            ]
+                        })
+                    }),
+                    Rows({
+                        height: 35,
+                        children: [
+                            Expanded(),
+                            Button("OK", {paddingLeft: 20, paddingRight:20, backgroundColor:"green", width: 50, onClick: () => {
+                                portal.unMounting();
+                                if(props.onAccept) {
+                                    props.onAccept!();
+                                }
+                            }}),
+                        ]
+                    })
+                ]
+            })
+        })
+    });
+}
+
+export function Prompt(props: PropsWidget = {}) {
+    let val = "";
+    const Main = () => {
+        const [value, setValue] = useState('');
+
+        return TextField({
+            label: props.ask,
+            value,
+            onChange: (e: any) => {
+                val = e.target.value;
+                setValue(e.target.value);
+            }
+        }).builder();
+    };
+    const portal = Modal({
+        width: 300,
+        height: 130,
+        child: Container({
+            color: "white",
+            radius: 10,
+            shadow: true,
+            padding: 10,
+            child: Column({
+                children: [
+                    Expanded({
+                        child: Column({
+                            children: [
+                                Space(10),
+                                React.createElement(Main),
+                            ]
+                        })
+                    }),
+                    Rows({
+                        height: 35,
+                        children: [
+                            Expanded(),
+                            Button("Cancel", {paddingLeft: 20, paddingRight:20, backgroundColor:"red", width: 50, onClick: () => {
+                                portal.unMounting();
+                            }}),
+                            Space(10),
+                            Button("OK", {paddingLeft: 20, paddingRight:20, backgroundColor:"green", width: 50, onClick: () => {
+                                portal.unMounting();
+                                if(props.onAccept) {
+                                    props.onAccept!(val);
+                                }
+                            }}),
+                        ]
+                    })
+                ]
+            })
+        })
+    });
+}
+
 interface PropsWidget {
     ref?: React.RefObject<HTMLDivElement | null>;
     key?: string;
     text?: string;
-    mode?: string;
+    label?: string;
+    title?: string;
+    anchorReference?: string;
+    ask?: string;
+    mode?: any;
     type?: any;
     mui?: any;
+    anchorPosition?: any;
+    anchorOrigin?: any;
+    value?: any;
+    defaultValue?: any;
+    anchorEl?: any;
+    message?: any;
+    action?: any;
+    autoHideDuration?: number;
+    open?: boolean;
+    defaultChecked?: boolean;
+    disabled?: boolean;
+    checked?: boolean;
+    inset?: boolean;
+    length?: number;
     click?: Function;
+    onContextMenu?: Function;
+    onAccept?: Function;
+    onChange?: Function;
     onClick?: Function;
     onClose?: Function;
     onMouseDown?: any;
@@ -969,4 +1411,36 @@ function applyStyles(style: any, option: any) {
     if (option.borderBottomRightRadius) style.borderBottomRightRadius = option.borderBottomRightRadius;
 
     return style;
+}
+
+function getDefaultConfig(props: PropsWidget) {
+    const defaultConfig: any = {
+        top: props.top || 0,
+        left: props.left || 0,
+        color: props.color || "transparent",
+        width: props.width || "50%",
+        height: props.height || "80%",
+        child: props.child,
+    };
+
+    const normalizeSize = (value: string | number): string => {
+        const stringValue = value.toString().trim();
+        return /\d(px|%)$/.test(stringValue) ? stringValue : `${stringValue}px`;
+    };
+
+    defaultConfig.width = normalizeSize(defaultConfig.width);
+    defaultConfig.height = normalizeSize(defaultConfig.height);
+
+    if (props.fullscreen) {
+        defaultConfig.top = 0;
+        defaultConfig.left = 0;
+        defaultConfig.width = "100%";
+        defaultConfig.height = "100%";
+    }
+
+    defaultConfig.top = `calc((100% - ${defaultConfig.height}) / 2)`;
+    defaultConfig.left = `calc((100% - ${defaultConfig.width}) / 2)`;
+    defaultConfig.transform = `translate(-${defaultConfig.top}, -${defaultConfig.left})`;
+
+    return defaultConfig;
 }
