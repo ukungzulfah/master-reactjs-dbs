@@ -7,6 +7,7 @@ import NotFound from "../pages/NotFound";
 import ProtectedRoute from "./ProtectedRoute";
 import { useEffect } from "react";
 import SampleLayout from "../layouts/SampleLayout";
+import MainLayoutChat from "../layouts/MainLayoutChat";
 
 const AppRoutes = () => {
   
@@ -25,8 +26,8 @@ const AppRoutes = () => {
       <Routes>
 
         {/* Routes dengan Layout */}
-        <Route path="/" element={<SampleLayout />}></Route>
-        {/* <Route path="/" element={<MainLayoutChat />}></Route> */}
+        {/* <Route path="/" element={<SampleLayout />}></Route> */}
+        <Route path="/" element={<MainLayoutChat />}></Route>
 
         {/* Routes dengan Layout */}
         <Route path="/test" element={<MainLayout />}>

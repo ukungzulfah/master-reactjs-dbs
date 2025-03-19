@@ -5,26 +5,29 @@ import ChatDashboard from "../pages/ChatDashboard";
 
 const MainLayoutChat = () => {
   return Root({
+    height: "100vh",
     child: Container({
         child: Column({
             children: [
                 header,
-                Rows({
-                    children: [
-                        Container({
-                            color: "red",
-                            width: 250,
-                            child: Drawer()
-                        }),
-                        Expanded({
-                            color: "black",
-                        }),
-                        Container({
-                            color: "blue",
-                            width: 400,
-                            child: ChatDashboard(),
-                        }),
-                    ]
+                Expanded({
+                    child: Rows({
+                        children: [
+                            Container({
+                                color: "red",
+                                width: 250,
+                                child: Drawer()
+                            }),
+                            Expanded({
+                                color: "black",
+                            }),
+                            Container({
+                                color: "blue",
+                                width: 400,
+                                child: ChatDashboard(),
+                            }),
+                        ]
+                    })
                 })
             ]
         })

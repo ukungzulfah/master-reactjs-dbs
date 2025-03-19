@@ -1,11 +1,14 @@
 import { Center, Column, Container, Expanded, Icon, Rows, SizedBox, Text } from "../System/Lib/Widgets";
+import MenuBar from "./MenuBar";
 
 export default () => {
     return Container({
         color: "#ccc",
         child: Column({
             children: [
-                Expanded(),
+                Expanded({
+                    child: MenuBar()
+                }),
                 Container({
                     height: 50,
                     child: Rows({
