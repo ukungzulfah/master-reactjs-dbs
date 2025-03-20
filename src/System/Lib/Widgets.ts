@@ -1,4 +1,4 @@
-import React, { createRef, RefObject, useRef, useState } from "react";
+import React, { createRef, RefObject, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import * as ReactDOMClient from "react-dom/client";
 import { Provider } from "react-redux";
@@ -91,6 +91,7 @@ class Widgets {
             case 'wrap':
             case 'stack':
             case 'column':
+                this.props.boxSizing = "border-box";
                 switch (this.parent?.props.mode) {
 
                     case 'singlechildscrollview':
@@ -201,8 +202,14 @@ class Widgets {
         }
 
         if (this.props.child) {
-            this.props.child.parent = this;
-            child = this.props.child?.builder(data);
+            if (this.props.child instanceof Widgets) {
+                this.props.child = this.props.child as Widgets;
+                this.props.child.parent = this;
+                child = this.props.child?.builder(data);
+            } else {
+                this.props.child = this.props.child as React.ReactNode;
+                child = React.createElement(React.Fragment, {}, this.props.child);
+            }
         }
 
         if (this.props.mode === "text") {
@@ -429,7 +436,7 @@ class Widgets {
         if (this.props.mode === "root-portal") {
             const portalChild = React.createElement(
                 this.props.type!,
-                configuration,
+                { ...configuration, key: this.props.key || `portal-${Date.now()}` },
                 child
             );
             const helper = document.createElement("div");
@@ -437,18 +444,19 @@ class Widgets {
             this.portal = ReactDOMClient.createRoot(helper);
             this.portal.render(
                 ReactDOM.createPortal(
-                    React.createElement(
-                        Provider,
-                        { store: store, children: portalChild }
-                    ),
+                    React.createElement(Provider, { store: store, children: portalChild }),
                     helper,
                     this.props.key || `portal-${Math.round(Math.random() * 1000000)}`
                 )
             );
-
+            
             this.portal.unMounting = () => {
                 this.portal.unmount();
-                document.body.removeChild(helper);
+                try {
+                    document.body.removeChild(helper);
+                } catch (error) {
+                    console.log("Child has removed");
+                }
             };
         } else {
             if (typeof this.props.type === "string") {
@@ -470,6 +478,33 @@ class Widgets {
         return this.portal;
     }
 
+    PortalComponent({ type, configuration, children, key }: any) {
+        useEffect(() => {
+            const helper = document.createElement('div');
+            document.body.appendChild(helper);
+            const portal = ReactDOMClient.createRoot(helper);
+    
+            portal.render(
+                React.createElement(
+                    type,
+                    { ...configuration, key: key || `portal-${Date.now()}` },
+                    children
+                )
+            );
+    
+            return () => {
+                portal.unmount();
+                try {
+                    document.body.removeChild(helper);
+                } catch (error) {
+                    console.log("Child has removed");
+                }
+            };
+        }, [type, configuration, children, key]);
+    
+        return null; // Portal tidak perlu return elemen visual karena portal ditangani secara eksternal
+    }
+
     buildPortal() {
         this.props.mode = "root-portal";
         return this.builder();
@@ -482,10 +517,45 @@ export function Root(props: PropsWidget = {}) {
     return new Widgets(props);
 }
 
+export function ButtonConfirm(text: string, props: PropsWidget = {}): any {
+    const originalClick = props.click;
+    const [confirm, setConfirm] = useState(false);
+    if(!confirm) {
+        return Button(text, {
+            ...props,
+            click: () => {
+                setConfirm(true);
+            }
+        });
+    } else {
+        return Button("Confirm", {
+            ...props,
+            icon: "check",
+            backgroundColor: "green",
+            click: () => {
+                if(originalClick) {
+                    originalClick();
+                }
+                setConfirm(false);
+            }
+        });
+    }
+}
+
 export function Button(text: string, props: PropsWidget = {}) {
+    if(props.confirm) {
+        if(props.onClick) {
+            props.click = props.onClick;
+            props.onClick = undefined;
+        }
+        return ButtonConfirm(text, {
+            ...props,
+            confirm: false,
+        });
+    }
     props.text = text;
-    props.paddingLeft = props.paddingLeft || 10;
-    props.paddingRight = props.paddingRight || 10;
+    props.paddingLeft = props.paddingLeft || 15;
+    props.paddingRight = props.paddingRight || 15;
     props.fontSize = props.fontSize || "16px";
     props.borderRadius = props.borderRadius || "8px";
     props.border = props.border || "none";
@@ -513,6 +583,30 @@ export function Icon(name: any, props: PropsWidget = {}) {
     props.type = "span";
     props.iconName = name;
     return new Widgets(props);
+}
+
+export function IconMui(name: any, props: PropsWidget = {}) {
+    return React.createElement(name, {
+        ...props,
+        sx: {
+            color: props.color || '',
+            fontSize: props.size || 24,
+            cursor: 'pointer',
+            ...props.sx,
+        }
+    });
+}
+
+export function IconButton(name: any, props: PropsWidget = {}) {
+    return React.createElement(name, {
+        ...props,
+        sx: {
+            color: props.color || '',
+            fontSize: props.size || 24,
+            cursor: 'pointer',
+            ...props.sx,
+        }
+    });
 }
 
 export function Image(props: PropsWidget = {}) {
@@ -720,10 +814,15 @@ export function Positioned(props: PropsWidget = {}) {
     return new Widgets(props);
 }
 
+export function Widget(widget: any, props?: any) {
+    return React.createElement(widget, props);
+}
+
 export function Modal(props: PropsWidget = {}) {
     const defaultConfig = getDefaultConfig(props);
 
     const portal = Root({
+        key: "modal-root",
         modal: true,
         child: Stack({
             children: [
@@ -776,7 +875,7 @@ export function Menu(e: any, props: PropsWidget = {}) {
     props.type = mui.Menu;
     props.mui = {
         anchorReference: props.anchorPosition ? "anchorPosition" : undefined,
-        anchorPosition: props.anchorPosition || null,
+        anchorPosition: props.anchorPosition || { left: e.clientX + 2, top: e.clientY - 6 },
         anchorEl: e.currentTarget,
         open: true,
         onClose: () => {
@@ -861,6 +960,18 @@ export function Fab(props: PropsWidget = {}) {
     return new Widgets(props);
 }
 
+export function Tooltip(props: PropsWidget = {}) {
+    props.mode = 'Tooltip';
+    props.type = mui.Tooltip;
+    return new Widgets({
+        ...props,
+        mui: {
+            title: props.title || '',
+            placement: props.placement || 'bottom',
+        }
+    });
+}
+
 export function InputLabel(props: PropsWidget = {}) {
     props.mode = 'InputLabel';
     props.type = mui.InputLabel;
@@ -921,9 +1032,8 @@ export function Switch(props: PropsWidget = {}) {
         ...props,
         mui: {
             disabled: props.disabled || false,
-            defaultValue: props.defaultValue || '',
             onChange: props.onChange || (() => { }),
-            value: props.value || '',
+            checked: props.value || false,
         }
     });
 }
@@ -939,6 +1049,7 @@ export function TextField(props: PropsWidget = {}) {
             label: props.label || '',
             onChange: props.onChange || (() => { }),
             value: props.value || '',
+            fullWidth: props.fullWidth || false,
         }
     });
 }
@@ -1184,11 +1295,15 @@ interface PropsWidget {
     text?: string;
     label?: string;
     title?: string;
+    placement?: string;
     anchorReference?: string;
+    boxSizing?: string;
     ask?: string;
     mode?: any;
     type?: any;
     mui?: any;
+    sx?: any;
+    fullWidth?: any;
     anchorPosition?: any;
     anchorOrigin?: any;
     value?: any;
@@ -1215,7 +1330,7 @@ interface PropsWidget {
     onMouseLeave?: any;
     onMouseUp?: any;
     variant?: any;
-    child?: Widgets;
+    child?: Widgets | React.ReactNode;
     childReact?: React.ReactNode;
     direction?: string;
     children?: any[];
@@ -1293,6 +1408,7 @@ interface PropsWidget {
     src?: string;
     iconName?: string;
     center?: boolean;
+    confirm?: boolean;
     icon?: any;
     borderTopLeftRadius?: number;
     borderTopRightRadius?: number;
@@ -1409,6 +1525,9 @@ function applyStyles(style: any, option: any) {
     if (option.borderTopRightRadius) style.borderTopRightRadius = option.borderTopRightRadius;
     if (option.borderBottomLeftRadius) style.borderBottomLeftRadius = option.borderBottomLeftRadius;
     if (option.borderBottomRightRadius) style.borderBottomRightRadius = option.borderBottomRightRadius;
+
+
+    if (option.boxSizing) style.boxSizing = option.boxSizing;
 
     return style;
 }

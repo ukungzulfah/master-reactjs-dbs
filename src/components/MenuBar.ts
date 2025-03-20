@@ -168,7 +168,6 @@ function TheMenu(item: any) {
 }
 
 export default function MenuBar() {
-
     return Container({
         child: Column({ children: nestMenu.items.map((item) => TheMenu(item)) })
     });
