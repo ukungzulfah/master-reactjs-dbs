@@ -1,50 +1,37 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import MainLayout from "../layouts/MainLayout";
-import Home from "../pages/Home";
-import Dashboard from "../pages/Dashboard";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
-import ProtectedRoute from "./ProtectedRoute";
-import { useEffect } from "react";
-import SampleLayout from "../layouts/SampleLayout";
-import MainLayoutChat from "../layouts/MainLayoutChat";
+import EditorLayout from "../layouts/EditorLayout";
+// import { Route, Router, Routes } from "../System/Lib/RouteEngine";
+import { Widget } from "../System/Lib/Widgets";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import MainLayout from "../layouts/MainLayout";
 
 const AppRoutes = () => {
+
+  const routeList = [
+    { path: "/", element: Widget(EditorLayout) },
+    { path: "/login", element: Widget(Login) },
+    { path: "*", element: Widget(NotFound) }
+  ];
   
-  useEffect(() => {
-    const handleTouchMove = (event: any) => {
-      event.stopPropagation();
-    };
-    document.addEventListener("touchmove", handleTouchMove, { passive: false });
-    return () => {
-      document.removeEventListener("touchmove", handleTouchMove);
-    };
-  }, []);
-  
+  // return Router({
+  //   children: Routes({
+  //     children: [
+  //       ...routeList.map((route, index) => {
+  //         return Route({
+  //           ...route,
+  //           key: `route-${index}`,
+  //         });
+  //       }),
+  //     ]
+  //   })
+  // });
+
   return (
     <Router>
       <Routes>
-
-        {/* Routes dengan Layout */}
-        {/* <Route path="/" element={<SampleLayout />}></Route> */}
-        <Route path="/" element={<MainLayoutChat />}></Route>
-
-        {/* Routes dengan Layout */}
-        <Route path="/test" element={<MainLayout />}>
-          <Route index element={<Home />} />
-          {/* <Route index element={<Dashboard />} /> */}
-          <Route 
-            path="dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-        </Route>
-
-        <Route path="/login" element={<Login />} />
-        {/* 404 Not Found */}
+        <Route path="/" element={<EditorLayout />}></Route>
+        <Route path="/main" element={<MainLayout />}></Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

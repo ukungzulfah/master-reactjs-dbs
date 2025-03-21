@@ -19,3 +19,25 @@ body {
   -ms-overflow-style: none;
   user-select: none;
 }
+.react-flow__panel.left {
+  left: 0;
+  bottom: 30px;
+  flex-direction: row;
+  row-gap: 10px;
+}
+
+.react-flow__controls-button {
+  height: 40px;
+  width: 40px;
+  margin-right: 10px;
+  border-radius: 5px;
+}
+.css-113d811-MuiFormLabel-root-MuiInputLabel-root {
+  padding-left: 10px;
+  padding-right: 10px;
+  /* background: white; */
+}
+.widget-Tooltip {
+  height: -webkit-fill-available;
+  margin-left: 5px;
+}
