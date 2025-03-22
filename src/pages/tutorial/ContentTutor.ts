@@ -39,11 +39,11 @@ export default function ContentTutor() {
 function Notes() {
   const { colors } = useSelector((state: RootState) => state.theme);
   const dispatch = useDispatch();
-  const [markdown, setMarkdown] = useState<string>("\n\n");
-  const [markdownMode, setMarkdownMode] = useState<boolean>(true);
-
   const menu = useSelector((state: RootState) => state.menu.menu);
   const slicingStorage = useSelector((state: RootState) => state.slicingStorage);
+  const data = localStorage[menu.name] || { text: "\n\n\n", code: "\n\n\n" };
+  const [markdown, setMarkdown] = useState<string>( data.text || "###" );
+  const [markdownMode, setMarkdownMode] = useState<boolean>(true);
 
   useEffect(() => {
     if (menu?.name) {
@@ -156,7 +156,7 @@ function Playground() {
   const codeEditor = Widget(Editor, {
     key: "editor-code",
     height: '100%',
-    defaultLanguage: 'typescript',
+    defaultLanguage: 'javascript',
     theme: colors.mode == "dark" ? 'vs-dark' : 'vs',
     value: code,
     onChange: (e: string) => handleCodeChange(e),
