@@ -128,6 +128,7 @@ export default function HeaderTop() {
               child: Button("", {
                 icon: button.icon,
                 backgroundColor: button.backgroundColor,
+                fontColor: "white",
                 click: () => button.click({nodes, edges})
               })
             })
@@ -185,6 +186,7 @@ export default function HeaderTop() {
           child: Button("Save Data", {
             icon: IconMui(DataSaverOnIcon),
             backgroundColor: "green",
+            fontColor: "white",
             click: () => {
               // Snackbar();
               Confirm({onAccept: () => {

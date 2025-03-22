@@ -55,6 +55,7 @@ export default function EditorConsole() {
           Container({
             height: 30,
             child: Rows({
+              width: "unset",
               children: [
                 ...tabs.map((tab, index) => Click({
                   paddingLeft: 20,

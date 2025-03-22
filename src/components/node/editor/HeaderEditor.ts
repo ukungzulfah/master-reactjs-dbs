@@ -1,8 +1,9 @@
 import { DataWidget } from "../../../contexts/NodeWidgetType";
 import { Container, Rows, Space, Expanded, Column, Text, Center, Button } from "../../../System/Lib/Widgets";
 
-export function HeaderEditor(data: DataWidget, handleSave: Function) {
+export function HeaderEditor(data: DataWidget, handleSave: Function) {  
   return Container({
+    backgroundColor: "theme.background",
     height: 70,
     child: Rows({
       children: [

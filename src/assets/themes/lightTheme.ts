@@ -1,6 +1,8 @@
-import { ThemeType } from "./ themeTypes";
+import { ThemeType } from "./themeTypes";
 
 const lightTheme: ThemeType = {
+    button: '#1976D2',
+    
     primary: '#1976D2',
     secondary: '#FF9800',
     tertiary: '#4CAF50',

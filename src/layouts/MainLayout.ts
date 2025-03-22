@@ -32,9 +32,7 @@ export default function MainLayout() {
 
   useEffect(() => {
     console.log("Init apps");
-    const timer = setTimeout(() => {
-      setButtonDisabled(false);
-    }, 3000);
+    const timer = setTimeout(() => setButtonDisabled(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -62,7 +60,7 @@ export default function MainLayout() {
     error: touchedPwd && password.length < 8,
     startAdornment: IconButton(LockPersonIcon),
     endAdornment: IconButton(showPassword ? VisibilityIcon : VisibilityOffIcon, {
-      onClick: () => setShowPassword(!showPassword)
+      color: "theme.textPrimary", onClick: () => setShowPassword(!showPassword)
     }),
     onChange: (e: any) => setPassword(e.target.value),
     onBlur: () => setTouchedPwd(true),
@@ -72,6 +70,7 @@ export default function MainLayout() {
     width: 130, height: 40,
     child: Button("Login", {
       disabled: buttonDisabled,
+      textColor: "white",
       confirm: true,
       loading,
       click: () => {
@@ -85,7 +84,7 @@ export default function MainLayout() {
   });
 
   return Root({
-    color: Theme.background,
+    theme: Theme,
     image: Theme.mode === "dark" ? bg2 : bg1,
     child: Column({
       center: true,
@@ -95,7 +94,7 @@ export default function MainLayout() {
           child: Paper({
             elevation: 10,
             child: Column({
-              width: 340, height: "auto", flex: "unset", padding: 20,
+              width: 340, height: 'unset', flex: "unset", padding: 20,
               children: [
                 Center({ child: Text("Login", { size: 30, weight: "bold" }) }),
                 Space(30),

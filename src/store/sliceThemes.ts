@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { lightTheme, darkTheme } from '../assets/themes';
-import { ThemeType } from '../assets/themes/ themeTypes';
+import { ThemeType } from '../assets/themes/themeTypes';
 
 interface ThemeState {
     theme: 'light' | 'dark';
@@ -8,8 +8,10 @@ interface ThemeState {
 }
 
 const initialState: ThemeState = {
-    theme: 'light',
-    colors: lightTheme
+    // theme: 'light',
+    // colors: lightTheme
+    theme: 'dark',
+    colors: darkTheme
 };
 
 const themeSlice = createSlice({

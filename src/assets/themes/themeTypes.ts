@@ -2,6 +2,8 @@
  * Interface yang mendefinisikan tipe tema dengan berbagai warna dan elemen desain.
  */
 export interface ThemeType {
+    button: string;
+    
     /**
      * Warna utama yang digunakan untuk elemen-elemen kunci dalam desain.
      */

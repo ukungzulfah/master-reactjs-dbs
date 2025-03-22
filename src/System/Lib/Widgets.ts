@@ -1,16 +1,18 @@
 import React, { createRef, RefObject, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import * as ReactDOMClient from "react-dom/client";
-import { Provider, useSelector } from "react-redux";
-import { RootState, store } from "../../store";
+import { Provider } from "react-redux";
+import { store } from "../../store";
 import * as mui from '@mui/material';
 import notification from '../../assets/icon/notification.png';
+import ReactMarkdown from 'react-markdown';
 
-class Widgets {
+export class Widgets {
     props: PropsWidget;
     parent?: Widgets;
     portalRef: RefObject<HTMLElement | null>;
     parcel: { [key: string]: any } = {};
+    theme: any;
 
     constructor(props: PropsWidget) {
         this.props = props;
@@ -31,6 +33,19 @@ class Widgets {
                 break;
 
             case 'click':
+                switch (this.parent?.props.mode) {
+                    case 'container':
+                        this.props.width = this.props.width || "100%";
+                        this.props.height = this.props.height || "100%";
+                        break;
+
+                    default:
+                        this.props.width = this.props.width || "100%";
+                        this.props.height = this.props.height || "100%";
+                        break;
+                }
+                break;
+
             case 'container':
                 switch (this.parent?.props.mode) {
                     case 'root':
@@ -49,8 +64,8 @@ class Widgets {
                         break;
 
                     case 'rows':
-                        this.props.width = this.props.width || "auto";
-                        this.props.height = this.props.height || "unset";
+                        this.props.width = this.props.width || "unset";
+                        this.props.height = this.props.height || "100%";
                         break;
 
                     case 'column':
@@ -71,7 +86,7 @@ class Widgets {
 
                     case 'container':
                         this.props.width = this.props.width || "100%";
-                        this.props.height = this.props.height || "inherit";
+                        this.props.height = this.props.height || "100%";
                         break;
 
                     case 'column':
@@ -86,6 +101,11 @@ class Widgets {
                         this.props.height = this.props.height || "100%";
                         break;
                 }
+                break;
+
+            case 'TextField':
+                this.props.width = this.props.width || "100%";
+                this.props.height = this.props.height || "-webkit-fit-content";
                 break;
 
             case 'wrap':
@@ -205,6 +225,10 @@ class Widgets {
             if (this.props.child instanceof Widgets) {
                 this.props.child = this.props.child as Widgets;
                 this.props.child.parent = this;
+                if(this.props.theme) {
+                    this.props.child.props.theme = this.props.theme;
+                    this.props.child.props = this.parseTheme(this.props.child.props, this.props.theme);
+                }
                 child = this.props.child?.builder(data);
             } else {
                 this.props.child = this.props.child as React.ReactNode;
@@ -212,62 +236,14 @@ class Widgets {
             }
         }
 
-        if (this.props.mode === "text") {
-            child = this.props.text;
-        }
-
-        if (this.props.mode === "FormControl") {
-            child = this.props.children?.filter(x => x).map((item, i) => {
-                if (item instanceof Widgets) {
-                    item.parent = this;
-                    item.setKey(`FormControl-${i}`)
-                    return item.builder(data);
-                } else {
-                    return React.createElement(React.Fragment, { key: `FormControl-${i}` }, item);
-                }
-            });
-        }
-
-        if (this.props.mode === "Select") {
-            child = this.props.children?.filter(x => x).map((item, i) => {
-                if (item instanceof Widgets) {
-                    item.parent = this;
-                    item.setKey(`Select-${i}`)
-                    return item.builder(data);
-                } else {
-                    return React.createElement(React.Fragment, { key: `Select-${i}` }, item);
-                }
-            });
-        }
-
-        if (this.props.mode === "ButtonGroup") {
-            child = this.props.children?.filter(x => x).map((item, i) => {
-                if (item instanceof Widgets) {
-                    item.parent = this;
-                    item.setKey(`ButtonGroup-${i}`)
-                    return item.builder(data);
-                } else {
-                    return React.createElement(React.Fragment, { key: `ButtonGroup-${i}` }, item);
-                }
-            });
-        }
-
-        if (this.props.mode === "Menu") {
-            child = this.props.children?.filter(x => x).map((item, i) => {
-                if (item instanceof Widgets) {
-                    item.parent = this;
-                    item.setKey(`Menu-${i}`)
-                    return item.builder(data);
-                } else {
-                    return React.createElement(React.Fragment, { key: `Menu-${i}` }, item);
-                }
-            });
-        }
-
         if (this.props.mode === "rows") {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
                     item.setKey(`rows-${i}`)
                     return item.builder(data);
                 } else {
@@ -280,6 +256,10 @@ class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
                     item.setKey(`column-${i}`)
                     return item.builder(data);
                 } else {
@@ -288,10 +268,82 @@ class Widgets {
             });
         }
 
+        if (this.props.mode === "text") {
+            child = this.props.text;
+        }
+
+        if (this.props.mode === "FormControl") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
+                    item.setKey(`FormControl-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `FormControl-${i}` }, item);
+                }
+            });
+        }
+
+        if (this.props.mode === "Select") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
+                    item.setKey(`Select-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `Select-${i}` }, item);
+                }
+            });
+        }
+
+        if (this.props.mode === "ButtonGroup") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
+                    item.setKey(`ButtonGroup-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `ButtonGroup-${i}` }, item);
+                }
+            });
+        }
+
+        if (this.props.mode === "Menu") {
+            child = this.props.children?.filter(x => x).map((item, i) => {
+                if (item instanceof Widgets) {
+                    item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
+                    item.setKey(`Menu-${i}`)
+                    return item.builder(data);
+                } else {
+                    return React.createElement(React.Fragment, { key: `Menu-${i}` }, item);
+                }
+            });
+        }
+
         if (this.props.mode === "wrap") {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
                     return item.builder(data);
                 } else {
                     return React.createElement(React.Fragment, { key: `wrap-${i}` }, item);
@@ -303,6 +355,10 @@ class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
+                    if(this.props.theme) {
+                        item.props.theme = this.props.theme;
+                        item.props = this.parseTheme(item.props, this.props.theme);
+                    }
                     item.setKey(`column-${i}`)
                     return item.builder(data);
                 } else {
@@ -466,7 +522,44 @@ class Widgets {
                     child
                 );
             } else {
-                const defMui = Object.assign(configuration, this.props.mui);
+                let defMui = Object.assign(configuration, this.props.mui);
+
+                if(defMui.InputProps) {
+                    let startAdornment, endAdornment;
+                    if(defMui.InputProps.startAdornment) {
+                        defMui.InputProps.startAdornment.parent = this;
+                        defMui.InputProps.startAdornment.props.theme = this.props.theme;
+                        startAdornment = defMui.InputProps.startAdornment.builder();
+                    }
+                    if(defMui.InputProps.endAdornment) {
+                        defMui.InputProps.endAdornment.parent = this;
+                        defMui.InputProps.endAdornment.props.theme = this.props.theme;
+                        endAdornment = defMui.InputProps.endAdornment.builder();
+                    }
+                    delete defMui.InputProps;
+                    defMui.InputProps = {
+                        startAdornment,
+                        endAdornment
+                    };
+                }
+
+                if(defMui.style) {
+                    defMui.style = this.parseTheme(defMui.style, this.props.theme);
+                }
+                if(defMui.sx) {
+                    for(let key in defMui.sx) {
+                        defMui.sx[key] = this.parseThemeRecursive(defMui.sx[key], this.props.theme);
+                    }
+                }
+
+                if(defMui.markdown) {
+                    child = defMui.markdown;
+                    defMui = {
+                        key: defMui.key,
+                        ref: defMui.ref,
+                    };
+                }
+
                 this.portal = React.createElement(
                     this.props.type!,
                     defMui,
@@ -476,6 +569,42 @@ class Widgets {
         }
 
         return this.portal;
+    }
+
+    parseThemeRecursive(props: any, theme:any) {
+        props = Object.entries(props).reduce((acc, [key, value]) => {
+            if (typeof value === 'string' && value.indexOf("theme.") >= 0) {
+                acc[key] = this.parseThemeString(value, theme);
+            } else {
+                if(typeof value === "object") {
+                    acc[key] = this.parseThemeRecursive(value, theme);
+                } else {
+                    acc[key] = value;
+                }
+            }
+            return acc;
+        }, {} as Record<string, any>);
+        
+        return props;
+    }
+
+    parseTheme(props: any, theme:any) {
+        props = Object.entries(props).reduce((acc, [key, value]) => {
+            if (typeof value === 'string' && value.indexOf("theme.") >= 0) {
+                acc[key] = this.parseThemeString(value, theme);
+            } else {
+                acc[key] = value;
+            }
+            return acc;
+        }, {} as Record<string, any>);
+        
+        return props;
+    }
+
+    parseThemeString(text: string, theme: any = {}) {
+        return text.replace(/\btheme\.([a-zA-Z0-9_]+)\b/g, (match, key) => {
+            return theme[key] || match;
+        });
     }
 
     PortalComponent({ type, configuration, children, key }: any) {
@@ -502,13 +631,25 @@ class Widgets {
             };
         }, [type, configuration, children, key]);
 
-        return null; // Portal tidak perlu return elemen visual karena portal ditangani secara eksternal
+        return null;
     }
 
     buildPortal() {
         this.props.mode = "root-portal";
         return this.builder();
     }
+}
+
+export function Text(text: string, props: PropsWidget = {}) {
+    props.fontColor = "theme.textPrimary";
+    if(props.textColor) {
+        props.fontColor = props.textColor;
+        props.textColor = undefined;
+    }
+    props.mode = "text";
+    props.type = "span";
+    props.text = text;
+    return new Widgets(props);
 }
 
 export function Root(props: PropsWidget = {}) {
@@ -562,8 +703,6 @@ export function ButtonConfirm(text: string, props: PropsWidget = {}): any {
 }
 
 export function Button(text: string, props: PropsWidget = {}) {
-    const { colors } = useSelector((state: RootState) => state.theme);
-
     if (props.confirm) {
         if (props.onClick) {
             props.click = props.onClick;
@@ -582,23 +721,22 @@ export function Button(text: string, props: PropsWidget = {}) {
     props.border = props.border || "none";
     props.cursor = props.cursor || "pointer";
     props.transition = props.transition || "all 0.3s ease";
-    props.backgroundColor = props.backgroundColor || colors.primary;
-    props.color = props.color || colors.textInverse;
-    props.fontColor = props.fontColor || colors.textInverse;
+    props.backgroundColor = props.backgroundColor || "theme.button";
+    props.fontColor = props.fontColor || "theme.textInverse";
     props.width = props.width || "unset";
     props.child = props.child || Center({
         child: props.icon ? Rows({
             center: true,
             children: [
-                Icon(props.icon, { color: props.fontColor, size: 20 }),
+                Icon(props.icon, { size: 20, color: "white" }),
                 SizedBox({ width: props.text ? 10 : 0 }),
-                Text(props.text, { color: props.fontColor, size: 14 })
+                Text(props.text, { size: 14, textColor: "white" })
             ]
-        }) : Text(props.text, { color: props.fontColor })
+        }) : Text(props.text, { textColor: props.textColor })
     });
 
     if (props.disabled) {
-        props.backgroundColor = colors.disabled;
+        props.backgroundColor = "theme.disabled";
         return Container(props);
     } else {
         return Click(props);
@@ -608,6 +746,7 @@ export function Button(text: string, props: PropsWidget = {}) {
 export function Icon(name: any, props: PropsWidget = {}) {
     props.mode = "icon";
     props.type = "span";
+    props.color = props.color || "theme.textPrimary";
     props.iconName = name;
     return new Widgets(props);
 }
@@ -754,15 +893,6 @@ export function Click(props: PropsWidget = {}) {
     return new Widgets(props);
 }
 
-export function Text(text: string, props: PropsWidget = {}) {
-    const { colors } = useSelector((state: RootState) => state.theme);
-    props.fontColor = props.color || colors.textPrimary;
-    props.mode = "text";
-    props.type = "span";
-    props.text = text;
-    return new Widgets(props);
-}
-
 export function Expanded(props: PropsWidget = {}) {
     props.mode = "expanded";
     props.type = "div";
@@ -821,8 +951,21 @@ export function Positioned(props: PropsWidget = {}) {
     return new Widgets(props);
 }
 
-export function Widget(widget: any, props?: any) {
+export function Widget(widget: any, props: PropsWidget = {}) {
     return React.createElement(widget, props);
+}
+
+export function Markdown(props: PropsWidget = {}) {
+    props.mode = 'ReactMarkdown';
+    props.type = ReactMarkdown;
+
+    return new Widgets({
+        ...props,
+        mui: {
+            markdown: props.markdown || '',
+            components: props.components || {},
+        }
+    });
 }
 
 export function Modal(props: PropsWidget = {}) {
@@ -1038,7 +1181,6 @@ export function Slider(props: PropsWidget = {}) {
 }
 
 export function FormControlLabel(props: PropsWidget = {}) {
-    const { colors } = useSelector((state: RootState) => state.theme);
     props.mode = 'FormControlLabel';
     props.type = mui.FormControlLabel;
     return new Widgets({
@@ -1051,13 +1193,13 @@ export function FormControlLabel(props: PropsWidget = {}) {
             sx: {
                 ...props.sx,
                 '& .MuiFormControlLabel-label': {
-                    color: props.error ? 'red' : colors.textPrimary,
+                    color: props.error ? 'red' : "theme.textPrimary",
                 },
                 '& .MuiCheckbox-root': {
-                    color: props.error ? 'red' : colors.textPrimary,
+                    color: props.error ? 'red' : "theme.textPrimary",
                 },
                 '& .MuiCheckbox-root.Mui-checked': {
-                    color: props.error ? 'darkred' : colors.textPrimary,
+                    color: props.error ? 'darkred' : "theme.textPrimary",
                 },
             }
         }
@@ -1065,7 +1207,6 @@ export function FormControlLabel(props: PropsWidget = {}) {
 }
 
 export function Switch(props: PropsWidget = {}): any {
-    const { colors } = useSelector((state: RootState) => state.theme);
     props.mode = 'Switch';
     props.type = mui.Switch;
     const widget = new Widgets({
@@ -1077,20 +1218,20 @@ export function Switch(props: PropsWidget = {}): any {
             key: props.key || "switch-key",
             sx:{
                 '& .MuiSwitch-switchBase': {
-                    color: props.checked ? colors.primary : colors.textDisabled,
+                    color: props.checked ? "theme.primary": "theme.textDisabled",
                 },
                 '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: colors.primary,
+                    color: "theme.primary",
                 },
                 '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: colors.primary,
+                    backgroundColor: "theme.primary",
                 },
                 '& .MuiSwitch-thumb': {
-                    backgroundColor:props.checked ? "white" : colors.primary,
+                    backgroundColor:props.checked ? "white" : "theme.primary",
                 },
                 '& .MuiSwitch-track': {
                     opacity: 1,
-                    backgroundColor: colors.border,
+                    backgroundColor: '#ccc',
                 },
             }
         }
@@ -1121,7 +1262,6 @@ export function CircularProgress(props: PropsWidget = {}) {
 }
 
 export function Paper(props: PropsWidget = {}) {
-    const { colors } = useSelector((state: RootState) => state.theme);
     props.mode = 'container';
     props.type = mui.Paper;
     return new Widgets({
@@ -1131,20 +1271,10 @@ export function Paper(props: PropsWidget = {}) {
             animation: props.animation || 'wave',
             elevation: props.elevation || 1,
             style: {
-                backgroundColor: colors.backgroundPaper
+                flex: 1,
+                backgroundColor: "theme.backgroundPaper",
+                ...props,
             }
-        }
-    });
-}
-
-export function IconMui(name: any, props: PropsWidget = {}) {
-    return React.createElement(name, {
-        ...props,
-        sx: {
-            color: props.color || "",
-            fontSize: props.size || 24,
-            cursor: 'pointer',
-            ...props.sx,
         }
     });
 }
@@ -1304,7 +1434,6 @@ export function InputAdornment(props: PropsWidget = {}) {
 }
 
 export function IconButton(name: any, props: PropsWidget = {}) {
-    const { colors } = useSelector((state: RootState) => state.theme);
     props.mode = 'IconButton';
     props.type = name;
     return new Widgets({
@@ -1317,8 +1446,41 @@ export function IconButton(name: any, props: PropsWidget = {}) {
         mui: {
             position: props.position || 'start',
             onClick: props.onClick || (() => { }),
-            style: props.style || {
-                color: colors.textPrimary,
+            style: {
+                color: props.color || "theme.textPrimary",
+                cursor: "pointer",
+            },
+        }
+    });
+}
+
+export function IconMui(name: any, props: PropsWidget = {}) {
+    return React.createElement(name, {
+        ...props,
+        sx: {
+            color: props.color || "theme.textPrimary",
+            fontSize: props.size || 24,
+            cursor: 'pointer',
+            ...props.sx,
+        }
+    });
+}
+
+export function IconComponent(name: any, props: PropsWidget = {}) {
+    props.mode = 'IconComponent';
+    props.type = name;
+    return new Widgets({
+        ...props,
+        cursor: "pointer",
+        style: props.style || {
+            color: "red",
+            cursor: "pointer",
+        },
+        mui: {
+            position: props.position || 'start',
+            onClick: props.onClick || (() => { }),
+            style: {
+                color: props.color || "theme.textPrimary",
                 cursor: "pointer",
             },
         }
@@ -1326,24 +1488,31 @@ export function IconButton(name: any, props: PropsWidget = {}) {
 }
 
 export function TextField(props: PropsWidget = {}) {
-    const { colors } = useSelector((state: RootState) => state.theme);
     props.mode = 'TextField';
     props.type = mui.TextField;
     const InputProps = props.InputProps || {};
     const inputProps = props.inputProps || {};
+    if(props.endIcon) {
+        props.endAdornment = props.endIcon;
+        props.endIcon = undefined;
+    }
+    if(props.startIcon) {
+        props.startAdornment = props.startIcon;
+        props.startIcon = undefined;
+    }
     if (props.endAdornment) {
         InputProps.endAdornment = InputAdornment({
             position: "end",
             style: { cursor: 'pointer' },
             child: props.endAdornment,
-        }).builder();
+        });
     }
     if (props.startAdornment) {
         InputProps.startAdornment = InputAdornment({
             position: "start",
             style: { cursor: 'pointer' },
             child: props.startAdornment,
-        }).builder();
+        });
     }
     if (props.minLength) {
         inputProps.minLength = props.minLength;
@@ -1377,26 +1546,26 @@ export function TextField(props: PropsWidget = {}) {
                 ...props.sx,
                 '& .MuiOutlinedInput-root': {
                     '& fieldset': {
-                        borderColor: props.error ? 'red' : colors.textPrimary
+                        borderColor: props.error ? 'red' : "theme.textPrimary"
                     },
                     '&:hover fieldset': {
-                        borderColor: props.error ? 'orange' : colors.textPrimary, // Warna border saat hover
+                        borderColor: props.error ? 'orange' : "theme.textPrimary",
                     },
                     '&.Mui-focused fieldset': {
-                        borderColor: props.error ? 'red' : colors.textPrimary, // Warna border saat fokus
+                        borderColor: props.error ? 'red' : "theme.textPrimary",
                     },
                 },
                 '& .MuiInputBase-input': {
-                    color: props.error ? 'red' : colors.textPrimary,
+                    color: props.error ? 'red' : "theme.textPrimary",
                 },
                 '& .MuiFormHelperText-root': {
-                    color: props.error ? 'red' : colors.textSecondary,
+                    color: props.error ? 'red' : "theme.textSecondary",
                 },
                 '& .MuiInputLabel-root': {
-                    color: props.error ? 'red' : colors.textSecondary,
+                    color: props.error ? 'red' : "theme.textSecondary",
                 },
                 '& .MuiInputLabel-shrink': {
-                    color: props.error ? 'red' : colors.textPrimary,
+                    color: props.error ? 'red' : "theme.textPrimary",
                 },
             }
         }
@@ -1448,9 +1617,9 @@ export function Snackbar(props: PropsWidget = {}) {
                                     alignItems: "center",
                                     children: [
                                         Container({
-                                            width: 50,
-                                            height: 50,
-                                            radius: 50,
+                                            width: 30,
+                                            height: 30,
+                                            radius: 30,
                                             marginLeft: 10,
                                             marginRight: 20,
                                             background: `url(${notification}) no-repeat center center`,
@@ -1531,10 +1700,14 @@ interface PropsWidget {
     orientation?: string;
     helperText?: string;
     ask?: string;
+    markdown?: string;
+    defaultLanguage?: string;
+    components?: any;
     mode?: any;
     type?: any;
     mui?: any;
     sx?: any;
+    theme?: any;
     rows?: number;
     minRows?: number;
     maxRows?: number;
@@ -1545,7 +1718,9 @@ interface PropsWidget {
     anchorPosition?: any;
     anchorOrigin?: any;
     startAdornment?: any;
+    startIcon?: any;
     endAdornment?: any;
+    endIcon?: any;
     value?: any;
     defaultValue?: any;
     anchorEl?: any;
@@ -1573,6 +1748,7 @@ interface PropsWidget {
     onChange?: Function;
     onClick?: Function;
     onClose?: Function;
+    options?: any;
     onMouseDown?: any;
     onMouseMove?: any;
     onMouseEnter?: any;
@@ -1611,6 +1787,8 @@ interface PropsWidget {
     paddingBottom?: number | string;
     paddingLeft?: number | string;
     border?: string;
+    borderSize?: number;
+    borderColor?: string;
     borderRight?: string;
     borderLeft?: string;
     borderTop?: string;
@@ -1660,6 +1838,7 @@ interface PropsWidget {
     animateValue?: number;
     src?: string;
     iconName?: string;
+    textColor?: string;
     center?: boolean;
     confirm?: boolean;
     loading?: boolean;
@@ -1668,6 +1847,10 @@ interface PropsWidget {
     borderTopRightRadius?: number;
     borderBottomLeftRadius?: number;
     borderBottomRightRadius?: number;
+    borderRightColor?: string;
+    borderLeftColor?: string;
+    borderTopColor?: string;
+    borderBottomColor?: string;
 }
 
 function applyStyles(style: any, option: any) {
@@ -1719,6 +1902,9 @@ function applyStyles(style: any, option: any) {
     if (option.paddingLeft != undefined) style.paddingLeft = typeof option.paddingLeft === 'number' ? `${option.paddingLeft}px` : option.paddingLeft;
 
     // Border & Outline
+    if (option.borderSize != undefined) style.borderSize = option.borderSize;
+    if (option.borderSize != undefined) style.borderStyle = 'solid';
+    if (option.borderColor != undefined) style.borderColor = option.borderColor;
     if (option.border != undefined) style.border = option.border;
     if (option.borderRight != undefined) style.borderRight = option.borderRight;
     if (option.borderLeft != undefined) style.borderLeft = option.borderLeft;
@@ -1726,6 +1912,12 @@ function applyStyles(style: any, option: any) {
     if (option.borderBottom != undefined) style.borderBottom = option.borderBottom;
     if (option.borderRadius != undefined) style.borderRadius = typeof option.borderRadius === 'number' ? `${option.borderRadius}px` : option.borderRadius;
     if (option.outline != undefined) style.outline = option.outline;
+    if (option.borderRightColor != undefined) style.borderRightColor = option.borderRightColor;
+    if (option.borderLeftColor != undefined) style.borderLeftColor = option.borderLeftColor;
+    if (option.borderTopColor != undefined) style.borderTopColor = option.borderTopColor;
+    if (option.borderBottomColor != undefined) style.borderBottomColor = option.borderBottomColor;
+
+    // Background
 
     if(option.image) {
         option.backgroundImage = `url(${option.image})`;

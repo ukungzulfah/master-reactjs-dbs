@@ -1,6 +1,8 @@
 import { configureStore } from "@reduxjs/toolkit";
 import flowReducer from './editor/flowSlice';
 import themeSlice from './sliceThemes';
+import sliceMenuTutor from './sliceMenuTutor';
+import slicingStorage from './slicingStorage';
 import { api } from "./api";
 
 export const store = configureStore({
@@ -8,6 +10,8 @@ export const store = configureStore({
     [api.reducerPath]: api.reducer,
     flow: flowReducer,
     theme: themeSlice,
+    menu: sliceMenuTutor,
+    slicingStorage: slicingStorage,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(api.middleware),
 });

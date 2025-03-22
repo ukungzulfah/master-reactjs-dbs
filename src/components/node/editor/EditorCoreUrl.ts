@@ -1,4 +1,4 @@
-import { Button, Center, Click, Column, Container, Expanded, IconMui, Rows, SingleChildScrollView, Space, Stack, Switch, Text, TextField } from "../../../System/Lib/Widgets";
+import { Button, Center, Click, Column, Container, Expanded, IconMui, Paper, Rows, SingleChildScrollView, Space, Stack, Switch, Text, TextField } from "../../../System/Lib/Widgets";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../../store";
 import { setNodesFromState } from "../../../store/editor/flowSlice";
@@ -22,11 +22,10 @@ export default function EditorCoreUrl(dataNode: DataNode) {
                 shadow: true,
                 borderTopLeftRadius: 20,
                 borderBottomLeftRadius: 20,
-                child: SideRight(dataNode)
+                child: SideRight()
               }),
               Expanded({
                 width: 500,
-                color: "white",
                 shadow: true,
                 display: "flex",
                 marginTop: 20,
@@ -50,7 +49,7 @@ function testEll() {
   });
 }
 
-function SideRight(dataNode: DataNode) {
+function SideRight() {
   return Container({
     color: "white",
     overflow: "hidden",
@@ -129,11 +128,14 @@ function Editor(dataNode: DataNode) {
   const renderedHeaders = useMemo(() => {
     return dataHeader.map((item, index) => (
       !customHeader ? null : Rows({
-        border: "1px solid black",
+        borderSize: 1,
+        borderColor: "theme.border",
         children: [
           Container({
             width: 150,
             padding: 5,
+            borderSize: 1,
+            borderRightColor: "theme.border",
             child: TextField({
               value: item.name,
               onChange: (e: any) => handleHeaderChange(index, "name", e.target.value),
@@ -141,6 +143,8 @@ function Editor(dataNode: DataNode) {
           }),
           Expanded({
             padding: 5,
+            borderSize: 1,
+            borderRightColor: "theme.border",
             child: TextField({
               value: item.value,
               fullWidth: true,
@@ -160,6 +164,7 @@ function Editor(dataNode: DataNode) {
                   child: Button("", {
                     icon: "delete",
                     backgroundColor: "red",
+                    fontColor: "white",
                     onClick: () => {
                       setDataHeader(dataHeader.filter((x: any, i: number) => i != index));
                     }
@@ -200,127 +205,136 @@ function Editor(dataNode: DataNode) {
   };
 
   return Container({
-    child: Column({
-      children: [
-        HeaderEditor(data, handleSave),
-        Expanded({
-          child: SingleChildScrollView({
-            child: Column({
-              padding: 20,
-              children: [
-                Rows({
-                  alignItems: "center",
-                  children: [
-                    Expanded({
-                      child: Text("Required Token", { fontWeight: "bold" }),
-                    }),
-                    Switch({
-                      value: requiredToken,
-                      onChange: (e: any) => {
-                        setRequiredToken(e.target.checked);
-                      },
-                    }),
-                  ]
-                }),
-                Space(10),
-                !requiredToken ? null : TextField({
-                  value: tokenCore,
-                  label: "Input Token",
-                  onChange: (e: any) => {
-                    setTokenCore(e.target.value);
-                  },
-                }),
-                Space(20),
-                Rows({
-                  alignItems: "center",
-                  children: [
-                    Expanded({
-                      child: Text("Url", { fontWeight: "bold" }),
-                    }),
-                  ]
-                }),
-                Space(10),
-                TextField({
-                  value: urlCore,
-                  label: "Input Url",
-                  onChange: (e: any) => {
-                    setUrlCore(e.target.value);
-                  },
-                }),
-                Space(20),
-                Rows({
-                  alignItems: "center",
-                  children: [
-                    Expanded({
-                      child: Text("Custom Header", { fontWeight: "bold" }),
-                    }),
-                    Switch({
-                      value: customHeader,
-                      onChange: (e: any) => {
-                        setCustomHeader(e.target.checked);
-                      },
-                    }),
-                  ]
-                }),
-
-                !customHeader ? null : Container({
-                  child: Column({
+    marginRight: 50,
+    child: Paper({
+      elevation: 10,
+      overflow: "hidden",
+      height: "100%",
+      child: Column({
+        children: [
+          HeaderEditor(data, handleSave),
+          Expanded({
+            child: SingleChildScrollView({
+              child: Column({
+                padding: 20,
+                children: [
+                  Rows({
+                    alignItems: "center",
                     children: [
-                      Rows({
-                        border: "1px solid black",
-                        color: "#ccc",
-                        children: [
-                          Container({
-                            width: 150,
-                            borderRight: "1px solid black",
-                            padding: 5,
-                            child: Center({
-                              child: Text("Field", { fontWeight: "bold" })
-                            })
-                          }),
-                          Expanded({
-                            padding: 5,
-                            child: Center({
-                              child: Text("Value", { fontWeight: "bold" })
-                            })
-                          }),
-                          Container({
-                            width: 100,
-                            borderLeft: "1px solid black",
-                            padding: 5,
-                            child: Center({
-                              child: Text("Action", { fontWeight: "bold" })
-                            })
-                          }),
-                        ]
-                      })
-                    ]
-                  })
-                }),
-                ...renderedHeaders,
-                !customHeader ? null : Container({
-                  width: 150,
-                  height: 35,
-                  marginTop: 10,
-                  child: Button("Add Header", {
-                    icon: "add",
-                    onClick: () => {
-                      setDataHeader([
-                        ...dataHeader,
-                        {
-                          name: "",
-                          value: ""
+                      Expanded({
+                        child: Text("Required Token", { fontWeight: "bold" }),
+                      }),
+                      Switch({
+                        checked: requiredToken,
+                        onChange: (e: any) => {
+                          setRequiredToken(e.target.checked);
                         },
-                      ]);
-                    }
-                  })
-                }),
-
-              ]
+                      }),
+                    ]
+                  }),
+                  Space(10),
+                  !requiredToken ? null : TextField({
+                    value: tokenCore,
+                    label: "Input Token",
+                    onChange: (e: any) => {
+                      setTokenCore(e.target.value);
+                    },
+                  }),
+                  Space(20),
+                  Rows({
+                    alignItems: "center",
+                    children: [
+                      Expanded({
+                        child: Text("Url", { fontWeight: "bold" }),
+                      }),
+                    ]
+                  }),
+                  Space(10),
+                  TextField({
+                    value: urlCore,
+                    label: "Input Url",
+                    onChange: (e: any) => {
+                      setUrlCore(e.target.value);
+                    },
+                  }),
+                  Space(20),
+                  Rows({
+                    alignItems: "center",
+                    children: [
+                      Expanded({
+                        child: Text("Custom Header", { fontWeight: "bold" }),
+                      }),
+                      Switch({
+                        checked: customHeader,
+                        onChange: (e: any) => {
+                          setCustomHeader(e.target.checked);
+                        },
+                      }),
+                    ]
+                  }),
+  
+                  !customHeader ? null : Container({
+                    backgroundColor: "theme.background",
+                    child: Column({
+                      children: [
+                        Rows({
+                          borderSize: 1,
+                          borderColor: "theme.border",
+                          children: [
+                            Container({
+                              width: 150,
+                              borderSize: 1,
+                              borderRightColor: "theme.border",
+                              padding: 5,
+                              child: Center({
+                                child: Text("Field", { fontWeight: "bold" })
+                              })
+                            }),
+                            Expanded({
+                              padding: 5,
+                              borderSize: 1,
+                              borderRightColor: "theme.border",
+                              child: Center({
+                                child: Text("Value", { fontWeight: "bold" })
+                              })
+                            }),
+                            Container({
+                              width: 100,
+                              padding: 5,
+                              child: Center({
+                                child: Text("Action", { fontWeight: "bold" })
+                              })
+                            }),
+                          ]
+                        })
+                      ]
+                    })
+                  }),
+                  ...renderedHeaders,
+                  !customHeader ? null : Container({
+                    width: 150,
+                    height: 35,
+                    marginTop: 10,
+                    child: Button("Add Header", {
+                      icon: "add",
+                      onClick: () => {
+                        setDataHeader([
+                          ...dataHeader,
+                          {
+                            name: "",
+                            value: ""
+                          },
+                        ]);
+                      }
+                    })
+                  }),
+  
+                ]
+              })
             })
-          })
-        }),
-      ]
+          }),
+        ]
+      })
     })
   });
 }

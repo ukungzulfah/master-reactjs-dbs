@@ -1,6 +1,8 @@
-import { ThemeType } from "./ themeTypes";
+import { ThemeType } from "./themeTypes";
 
 const darkTheme: ThemeType = {
+    button: '#424242',
+
     primary: '#90CAF9',
     secondary: '#FFB74D',
     tertiary: '#81C784',
