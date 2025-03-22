@@ -53,10 +53,14 @@ export class Widgets {
                         this.props.height = this.props.height || "auto";
                         break;
 
+                    case 'container':
+                        this.props.width = this.props.width || "inherit";
+                        this.props.height = this.props.height || "inherit";
+                        break;
+
                     case 'click':
                     case 'stack':
                     case 'positioned':
-                    case 'container':
                     case 'expanded':
                     case 'root-portal':
                         this.props.width = this.props.width || "100%";
@@ -156,6 +160,15 @@ export class Widgets {
                         break;
 
                     default:
+                        break;
+                }
+                break;
+
+            case 'singlechildscrollview':
+                switch (this.parent?.props.mode) {
+                    default:
+                        this.props.width = this.props.width || "100%";
+                        this.props.height = this.props.height || "100%";
                         break;
                 }
                 break;
@@ -489,6 +502,14 @@ export class Widgets {
             configuration.onMouseLeave = this.props.onMouseLeave;
         }
 
+        if (this.props.onScroll) {
+            configuration.onScroll = this.props.onScroll;
+        }
+
+        if (this.props.onFocus) {
+            configuration.onFocus = this.props.onFocus;
+        }
+
         if (this.props.mode === "root-portal") {
             const portalChild = React.createElement(
                 this.props.type!,
@@ -550,6 +571,10 @@ export class Widgets {
                     for(let key in defMui.sx) {
                         defMui.sx[key] = this.parseThemeRecursive(defMui.sx[key], this.props.theme);
                     }
+                }
+
+                if(this.props.sx) {
+                    defMui.sx = this.parseThemeRecursive(this.props.sx, this.props.theme);
                 }
 
                 if(defMui.markdown) {
@@ -1102,11 +1127,18 @@ export function Checkbox(props: PropsWidget = {}) {
     props.mode = 'Checkbox';
     props.type = mui.Checkbox;
     return new Widgets({
-        ...props,
         mui: {
             checked: props.checked || false,
             disabled: props.disabled || false,
-        }
+            indeterminate: props.indeterminate || false,
+        },
+        sx: {
+            color: "theme.textPrimary",
+            '&.Mui-checked': {
+              color: "theme.primary",
+            },
+        },
+        ...props,
     });
 }
 
@@ -1310,7 +1342,8 @@ export function Confirm(props: PropsWidget = {}) {
             if (props.onAccept) {
                 props.onAccept();
             }
-        }
+        },
+        ...props,
     });
 }
 
@@ -1596,7 +1629,6 @@ export function Snackbar(props: PropsWidget = {}) {
             }
         },
         child: Container({
-            color: props.color || "white",
             fontColor: props.fontColor || "black",
             width: props.width || 350,
             radius: 10,
@@ -1610,7 +1642,8 @@ export function Snackbar(props: PropsWidget = {}) {
             child: Stack({
                 display: "flex",
                 children: [
-                    Container({
+                    Paper({
+                        elevation: 10,
                         padding: 10,
                         child: Column({
                             children: [
@@ -1634,20 +1667,20 @@ export function Snackbar(props: PropsWidget = {}) {
                                         })
                                     ]
                                 }),
-                                Space(props.onAccept ? 10 : 0),
+                                Space(props.onAccept ? 20 : 0),
                                 !props.onAccept ? Space(0) : Container({
-                                    height: 35,
+                                    height: 30,
                                     child: Rows({
                                         children: [
                                             Expanded(),
                                             Button("Cancel", {
-                                                paddingLeft: 20, paddingRight: 20, backgroundColor: "red", width: 50, onClick: () => {
+                                                paddingLeft: 20, paddingRight: 20, backgroundColor: "theme.error", width: 50, onClick: () => {
                                                     portal.unMounting();
                                                 }
                                             }),
                                             Space(10),
                                             Button("OK", {
-                                                paddingLeft: 20, paddingRight: 20, backgroundColor: "green", width: 50, onClick: () => {
+                                                paddingLeft: 20, paddingRight: 20, backgroundColor: "theme.success", width: 50, onClick: () => {
                                                     portal.unMounting();
                                                     if (props.onAccept) {
                                                         props.onAccept!();
@@ -1731,6 +1764,7 @@ interface PropsWidget {
     inputProps?: any;
     autoHideDuration?: number;
     open?: boolean;
+    indeterminate?: boolean;
     multiline?: boolean;
     required?: boolean;
     enable?: boolean;
@@ -1749,6 +1783,8 @@ interface PropsWidget {
     onChange?: Function;
     onClick?: Function;
     onClose?: Function;
+    onScroll?: Function;
+    onFocus?: Function;
     options?: any;
     onMouseDown?: any;
     onMouseMove?: any;
@@ -1823,6 +1859,7 @@ interface PropsWidget {
     boxShadow?: string;
     textShadow?: string;
     overflow?: string;
+    textOverflow?: string;
     overflowX?: string;
     overflowY?: string;
     cursor?: string;
@@ -1964,6 +2001,7 @@ function applyStyles(style: any, option: any) {
     if (option.overflow) style.overflow = option.overflow;
     if (option.overflowX) style.overflowX = option.overflowX;
     if (option.overflowY) style.overflowY = option.overflowY;
+    if (option.textOverflow) style.textOverflow = option.textOverflow;
 
     // Cursor
     if (option.cursor) style.cursor = option.cursor;
@@ -1983,6 +2021,7 @@ function applyStyles(style: any, option: any) {
 
 
     if (option.boxSizing) style.boxSizing = option.boxSizing;
+    if (option.gap) style.gap = option.gap;
 
     return style;
 }

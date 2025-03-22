@@ -14,10 +14,9 @@ export default function SideBar() {
   return Column({
     children: [
       SizedBox({
-        height: 60,
+        padding: 12,
         borderBottom: "1px solid theme.border",
         child: TextField({
-          margin: 12,
           placeholder: "search menu...",
           value: filterMenu,
           onChange: (e: any) => dispatch(setFilterMenu(e.target.value)),
