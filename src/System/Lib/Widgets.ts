@@ -560,6 +560,7 @@ export class Widgets {
                     };
                 }
 
+                delete defMui.className;
                 this.portal = React.createElement(
                     this.props.type!,
                     defMui,
