@@ -1,4 +1,4 @@
-import React, { createRef, RefObject, useEffect, useRef, useState } from "react";
+import React, { createRef, RefObject, useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import * as ReactDOMClient from "react-dom/client";
 import { Provider } from "react-redux";
@@ -6,6 +6,7 @@ import { store } from "../../store";
 import * as mui from '@mui/material';
 import notification from '../../assets/icon/notification.png';
 import ReactMarkdown from 'react-markdown';
+import { configureStore, createSlice, PayloadAction, SliceCaseReducers } from "@reduxjs/toolkit";
 
 export class Widgets {
     props: PropsWidget;
@@ -100,7 +101,7 @@ export class Widgets {
                     default:
                         this.props.flex = this.props.flex || "1";
                         this.props.display = this.props.display || "flex";
-                        this.props.flexDirection = "row";
+                        this.props.flexDirection = this.props.flexDirection || "row";
                         this.props.width = this.props.width || "100%";
                         this.props.height = this.props.height || "100%";
                         break;
@@ -235,17 +236,21 @@ export class Widgets {
         }
 
         if (this.props.child) {
-            if (this.props.child instanceof Widgets) {
-                this.props.child = this.props.child as Widgets;
-                this.props.child.parent = this;
-                if(this.props.theme) {
-                    this.props.child.props.theme = this.props.theme;
-                    this.props.child.props = this.parseTheme(this.props.child.props, this.props.theme);
-                }
-                child = this.props.child?.builder(data);
+            if(this.props.child instanceof Function) {
+                child = Widget(this.props.child);
             } else {
-                this.props.child = this.props.child as React.ReactNode;
-                child = React.createElement(React.Fragment, {}, this.props.child);
+                if (this.props.child instanceof Widgets) {
+                    this.props.child = this.props.child as Widgets;
+                    this.props.child.parent = this;
+                    if (this.props.theme) {
+                        this.props.child.props.theme = this.props.theme;
+                        this.props.child.props = this.parseTheme(this.props.child.props, this.props.theme);
+                    }
+                    child = this.props.child?.builder(data);
+                } else {
+                    this.props.child = this.props.child as React.ReactNode;
+                    child = React.createElement(React.Fragment, {}, this.props.child);
+                }
             }
         }
 
@@ -253,7 +258,7 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
@@ -269,7 +274,7 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
@@ -289,7 +294,7 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
@@ -305,7 +310,7 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
@@ -321,7 +326,7 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
@@ -337,7 +342,7 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
@@ -353,10 +358,11 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
+                    item.setKey(`column-${i}`);
                     return item.builder(data);
                 } else {
                     return React.createElement(React.Fragment, { key: `wrap-${i}` }, item);
@@ -368,7 +374,7 @@ export class Widgets {
             child = this.props.children?.filter(x => x).map((item, i) => {
                 if (item instanceof Widgets) {
                     item.parent = this;
-                    if(this.props.theme) {
+                    if (this.props.theme) {
                         item.props.theme = this.props.theme;
                         item.props = this.parseTheme(item.props, this.props.theme);
                     }
@@ -411,11 +417,15 @@ export class Widgets {
         const configuration: any = {
             key: this.props.key!,
             ref: this.props.ref ? this.props.ref : this.portalRef,
-            className: `widget-${this.props.mode!}`,
+            className: this.props.className || `widget-${this.props.mode!}`,
             style: styles,
             "data-mode": this.props.type!,
         };
-
+        const attributes = this.props.attr || {};
+        for (let key in attributes) {
+            configuration[key] = attributes[key];
+        }
+        
         if (this.props.onContextMenu) {
             // onContextMenu
             configuration.onContextMenu = (e: any) => {
@@ -521,7 +531,7 @@ export class Widgets {
             this.portal = ReactDOMClient.createRoot(helper);
             this.portal.render(
                 ReactDOM.createPortal(
-                    React.createElement(Provider, { store: store, children: portalChild }),
+                    React.createElement(Provider, { store, children: portalChild }),
                     helper,
                     this.props.key || `portal-${Math.round(Math.random() * 1000000)}`
                 )
@@ -545,14 +555,14 @@ export class Widgets {
             } else {
                 let defMui = Object.assign(configuration, this.props.mui);
 
-                if(defMui.InputProps) {
+                if (defMui.InputProps) {
                     let startAdornment, endAdornment;
-                    if(defMui.InputProps.startAdornment) {
+                    if (defMui.InputProps.startAdornment) {
                         defMui.InputProps.startAdornment.parent = this;
                         defMui.InputProps.startAdornment.props.theme = this.props.theme;
                         startAdornment = defMui.InputProps.startAdornment.builder();
                     }
-                    if(defMui.InputProps.endAdornment) {
+                    if (defMui.InputProps.endAdornment) {
                         defMui.InputProps.endAdornment.parent = this;
                         defMui.InputProps.endAdornment.props.theme = this.props.theme;
                         endAdornment = defMui.InputProps.endAdornment.builder();
@@ -564,20 +574,20 @@ export class Widgets {
                     };
                 }
 
-                if(defMui.style) {
+                if (defMui.style) {
                     defMui.style = this.parseTheme(defMui.style, this.props.theme);
                 }
-                if(defMui.sx) {
-                    for(let key in defMui.sx) {
+                if (defMui.sx) {
+                    for (let key in defMui.sx) {
                         defMui.sx[key] = this.parseThemeRecursive(defMui.sx[key], this.props.theme);
                     }
                 }
 
-                if(this.props.sx) {
+                if (this.props.sx) {
                     defMui.sx = this.parseThemeRecursive(this.props.sx, this.props.theme);
                 }
 
-                if(defMui.markdown) {
+                if (defMui.markdown) {
                     child = defMui.markdown;
                     defMui = {
                         key: defMui.key,
@@ -597,12 +607,12 @@ export class Widgets {
         return this.portal;
     }
 
-    parseThemeRecursive(props: any, theme:any) {
+    parseThemeRecursive(props: any, theme: any) {
         props = Object.entries(props).reduce((acc, [key, value]) => {
             if (typeof value === 'string' && value.indexOf("theme.") >= 0) {
                 acc[key] = this.parseThemeString(value, theme);
             } else {
-                if(typeof value === "object") {
+                if (typeof value === "object") {
                     acc[key] = this.parseThemeRecursive(value, theme);
                 } else {
                     acc[key] = value;
@@ -610,11 +620,11 @@ export class Widgets {
             }
             return acc;
         }, {} as Record<string, any>);
-        
+
         return props;
     }
 
-    parseTheme(props: any, theme:any) {
+    parseTheme(props: any, theme: any) {
         props = Object.entries(props).reduce((acc, [key, value]) => {
             if (typeof value === 'string' && value.indexOf("theme.") >= 0) {
                 acc[key] = this.parseThemeString(value, theme);
@@ -623,7 +633,7 @@ export class Widgets {
             }
             return acc;
         }, {} as Record<string, any>);
-        
+
         return props;
     }
 
@@ -668,7 +678,7 @@ export class Widgets {
 
 export function Text(text: string, props: PropsWidget = {}) {
     props.fontColor = "theme.textPrimary";
-    if(props.textColor) {
+    if (props.textColor) {
         props.fontColor = props.textColor;
         props.textColor = undefined;
     }
@@ -750,13 +760,14 @@ export function Button(text: string, props: PropsWidget = {}) {
     props.backgroundColor = props.backgroundColor || "theme.button";
     props.fontColor = props.fontColor || "theme.textInverse";
     props.width = props.width || "unset";
+    props.userSelect = props.userSelect || "none";
     props.child = props.child || Center({
         child: props.icon ? Rows({
             center: true,
             children: [
                 Icon(props.icon, { size: 20, color: "white" }),
                 SizedBox({ width: props.text ? 10 : 0 }),
-                Text(props.text, { size: 14, textColor: "white" })
+                Text(props.text, { size: 14, fontColor: "white", userSelect: "none" })
             ]
         }) : Text(props.text, { textColor: props.textColor })
     });
@@ -864,7 +875,7 @@ export function Draggable(props: PropsWidget = {}) {
 
     props.ref = boxRef;
     props.enable = props.enable != undefined ? props.enable : true;
-    if(props.enable) {
+    if (props.enable) {
         props.onMouseDown = handleMouseDown;
         props.onMouseMove = handleMouseMove;
         props.onMouseUp = handleMouseUp;
@@ -977,8 +988,12 @@ export function Positioned(props: PropsWidget = {}) {
     return new Widgets(props);
 }
 
-export function Widget(widget: any, props: PropsWidget = {}) {
-    return React.createElement(widget, props);
+export function Widget(widget: any, props: PropsWidget = {}, children?:any) {
+    if(children) {
+        return React.createElement(widget, props, children);
+    } else {
+        return React.createElement(widget, props);
+    }
 }
 
 export function Markdown(props: PropsWidget = {}) {
@@ -1006,7 +1021,6 @@ export function Modal(props: PropsWidget = {}) {
                     onClick: () => {
                         cleanup();
                     },
-                    // color: "#0000007d",
                 }),
                 Positioned(defaultConfig)
             ]
@@ -1135,7 +1149,7 @@ export function Checkbox(props: PropsWidget = {}) {
         sx: {
             color: "theme.textPrimary",
             '&.Mui-checked': {
-              color: "theme.primary",
+                color: "theme.primary",
             },
         },
         ...props,
@@ -1249,9 +1263,9 @@ export function Switch(props: PropsWidget = {}): any {
             onChange: props.onChange || (() => { }),
             checked: props.checked || false,
             key: props.key || "switch-key",
-            sx:{
+            sx: {
                 '& .MuiSwitch-switchBase': {
-                    color: props.checked ? "theme.primary": "theme.textDisabled",
+                    color: props.checked ? "theme.primary" : "theme.textDisabled",
                 },
                 '& .MuiSwitch-switchBase.Mui-checked': {
                     color: "theme.primary",
@@ -1260,7 +1274,7 @@ export function Switch(props: PropsWidget = {}): any {
                     backgroundColor: "theme.primary",
                 },
                 '& .MuiSwitch-thumb': {
-                    backgroundColor:props.checked ? "white" : "theme.primary",
+                    backgroundColor: props.checked ? "white" : "theme.primary",
                 },
                 '& .MuiSwitch-track': {
                     opacity: 1,
@@ -1526,11 +1540,11 @@ export function TextField(props: PropsWidget = {}) {
     props.type = mui.TextField;
     const InputProps = props.InputProps || {};
     const inputProps = props.inputProps || {};
-    if(props.endIcon) {
+    if (props.endIcon) {
         props.endAdornment = props.endIcon;
         props.endIcon = undefined;
     }
-    if(props.startIcon) {
+    if (props.startIcon) {
         props.startAdornment = props.startIcon;
         props.startIcon = undefined;
     }
@@ -1576,7 +1590,7 @@ export function TextField(props: PropsWidget = {}) {
             maxRows: props.maxRows || null,
             InputProps: InputProps,
             inputProps: inputProps,
-            sx:{
+            sx: {
                 ...props.sx,
                 '& .MuiOutlinedInput-root': {
                     '& fieldset': {
@@ -1722,9 +1736,97 @@ export function Toast(message: string, props: PropsWidget = {}) {
     });
 }
 
+const parseSafeInt = (value: any, defaultValue: number) => isNaN(parseInt(value)) ? defaultValue : parseInt(value);
+
+
+const throttle = (fn: any, wait: any) => {
+    let lastTime = 0;
+    return (...args: any) => {
+        const now = Date.now();
+        if (now - lastTime >= wait) {
+            fn(...args);
+            lastTime = now;
+        }
+    };
+};
+
+export function Resize(props: PropsWidget = {}) {
+    const initialWidth = parseSafeInt(props.width, 0);
+    const [width, setWidth] = useState<number>(initialWidth);
+    const widthRef = useRef(initialWidth);
+    const resizeRef = useRef(null);
+
+    useEffect(() => {
+        const newWidth = parseSafeInt(props.width, 0);
+        if (newWidth !== widthRef.current) {
+            setWidth(newWidth);
+            widthRef.current = newWidth;
+        }
+    }, [props.width]);
+
+    const minWidth = Math.min(parseSafeInt(props.minWidth, 100), parseSafeInt(props.maxWidth, 1000));
+    const maxWidth = Math.max(parseSafeInt(props.minWidth, 100), parseSafeInt(props.maxWidth, 1000));
+
+    const handleMouseDown = useCallback((e: any) => {
+        const startX = e.clientX;
+        const startWidth = widthRef.current;
+
+        const handleMouseMove = throttle((moveEvent: any) => {
+            let newWidth = startWidth + (moveEvent.clientX - startX);
+            newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+
+            if (newWidth !== widthRef.current) {
+                widthRef.current = newWidth;
+                setWidth(newWidth);
+            }
+        }, 10);
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [minWidth, maxWidth]);
+
+    props.mode = 'Resize';
+    props.type = 'div';
+
+    return Root({
+        ...props,
+        width,
+        flex: 'unset',
+        display: 'unset',
+        flexDirection: 'unset',
+        child: Stack({
+            children: [
+                Container({ child: props.child }),
+                Positioned({
+                    top: 0,
+                    right: 0,
+                    width: 10,
+                    height: "100%",
+                    child: Container({
+                        color: "transparent",
+                        cursor: "ew-resize",
+                        padding: "0 2px",
+                        ref: resizeRef,
+                        onMouseDown: handleMouseDown,
+                    })
+                }),
+            ]
+        })
+    }).builder();
+}
+
 interface PropsWidget {
-    ref?: React.RefObject<HTMLDivElement | null>;
+    // ref?: React.RefObject<HTMLDivElement | null>;
+    ref?: any;
     key?: string;
+    className?: string;
+    id?: any;
+    handles?: any;
     text?: string;
     label?: string;
     title?: string;
@@ -1739,6 +1841,7 @@ interface PropsWidget {
     components?: any;
     mode?: any;
     type?: any;
+    attr?: any;
     mui?: any;
     sx?: any;
     theme?: any;
@@ -1793,7 +1896,7 @@ interface PropsWidget {
     style?: any;
     onMouseUp?: any;
     variant?: any;
-    child?: Widgets | React.ReactNode;
+    child?: Widgets | React.ReactNode | Function;
     childReact?: React.ReactNode;
     direction?: string;
     children?: any[];
@@ -1807,6 +1910,8 @@ interface PropsWidget {
     alignItems?: string;
     alignContent?: string;
     flexWrap?: string;
+    resize?: boolean;
+    resizeRight?: boolean;
     width?: number | string;
     height?: number | string;
     minWidth?: number | string;
@@ -1957,7 +2062,7 @@ function applyStyles(style: any, option: any) {
 
     // Background
 
-    if(option.image) {
+    if (option.image) {
         option.backgroundImage = `url(${option.image})`;
         option.backgroundSize = "cover";
         option.backgroundPosition = "center";
@@ -2056,4 +2161,63 @@ function getDefaultConfig(props: PropsWidget) {
     defaultConfig.transform = `translate(-${defaultConfig.top}, -${defaultConfig.left})`;
 
     return defaultConfig;
+}
+
+
+export default function buildingStore<
+    T,
+    R extends SliceCaseReducers<T>,
+    C extends Record<string, (...args: any[]) => any>
+>(
+    initialState: T,
+    reducers: R,
+    init?: (dispatch: any) => void,
+    computedState?: (getState: () => T) => C,
+) {
+    const name = "store";
+    const slice = createSlice({
+        name,
+        initialState,
+        // @ts-ignore
+        reducers,
+    });
+
+    const stored = configureStore({ reducer: { [name]: slice.reducer } });
+    type ActionsType = typeof slice.actions;
+
+    return function useStore(): { state: T } & ActionsType & C {
+        const [state, setState] = useState<T>(stored.getState()[name]);
+
+        useEffect(() => {
+            const unsubscribe = stored.subscribe(() => {
+                setState(stored.getState()[name]);
+            });
+
+            if (init) {
+                init((data: any) => {
+                    stored.dispatch({ type: `${name}/init`, payload: data });
+                });
+            }
+
+            return () => unsubscribe();
+        }, []);
+
+        const parseFn: Record<string, (data: any) => void> = {};
+        for (let key in slice.actions) {
+            const actionCreator = slice.actions[key];
+            if (typeof actionCreator === 'function') {
+                parseFn[key] = (...args: any) => {
+                    stored.dispatch(actionCreator(...args));
+                };
+            }
+        }
+
+        const computed = computedState ? computedState(() => stored.getState()[name]) : {} as C;
+
+        return {
+            state,
+            ...parseFn as ActionsType,
+            ...computed
+        };
+    };
 }

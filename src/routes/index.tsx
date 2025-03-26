@@ -6,12 +6,18 @@ import TutorialLayout from "../layouts/TutorialLayout";
 import ContentTutor from "../pages/tutorial/ContentTutor";
 import Welcome from "../pages/tutorial/Welcome";
 import Sample from "../layouts/Sample";
+import Trin from "../layouts/Trin";
+import SimpleState from "../layouts/SimpleState";
+import TableSample from "../layouts/TableSample";
 
 const AppRoutes = () => {
 
   return (
     <Router>
       <Routes>
+        <Route path="/table" element={<TableSample />}></Route>
+        <Route path="/state" element={<SimpleState />}></Route>
+        <Route path="/trin" element={<Trin />}></Route>
         <Route path="/sample" element={<Sample />}></Route>
 
         <Route path="/" element={<TutorialLayout />}>

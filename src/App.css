@@ -41,3 +41,24 @@ body {
   height: -webkit-fill-available;
   margin-left: 5px;
 }
+
+.widget-singlechildscrollview {
+  overflow: auto;
+  max-height: 100vh;
+}
+
+.widget-singlechildscrollview::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  background-color: transparent;
+}
+
+.widget-singlechildscrollview::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 0px;
+}
+
+.widget-singlechildscrollview::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+

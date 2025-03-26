@@ -8,8 +8,6 @@ interface ThemeState {
 }
 
 const initialState: ThemeState = {
-    // theme: 'light',
-    // colors: lightTheme
     theme: 'dark',
     colors: darkTheme
 };

@@ -1,8 +1,11 @@
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
-import { Button, Center, Checkbox, Click, Column, Confirm, Container, Expanded, Icon, Prompt, Root, Rows, SingleChildScrollView, Space, Switch, Text, TextField } from "../System/Lib/Widgets";
+import { Button, Center, Checkbox, Click, Column, Confirm, Container, Expanded, Icon, Modal, Root, Rows, SingleChildScrollView, Space, Switch, Text, TextField, Widget } from "../System/Lib/Widgets";
 import { useEffect, useRef, useState } from "react";
 import { setTheme } from "../store/sliceThemes";
+import useStoreData from "../context/useStoreData";
+import Trin from "./Trin";
+
 
 export default function Sample() {
   const { colors } = useSelector((state: RootState) => state.theme);
@@ -29,8 +32,8 @@ export default function Sample() {
                   borderTop: "1px solid theme.border",
                   child: Rows({
                     children: [
-                      width !== 300 ? null : Space(10),
-                      width !== 300 ? null : Switch({
+                      width < 200 ? null : Space(10),
+                      width < 200 ? null : Switch({
                         checked,
                         label: !checked ? "Light Mode" : "Dark Mode",
                         onChange: (e: any) => {
@@ -67,7 +70,6 @@ export default function Sample() {
 }
 
 function SideBar(width: number) {
-
   return Column({
     children: [
       Container({
@@ -86,6 +88,9 @@ function SideBar(width: number) {
           })
         })
       }),
+      Expanded({
+        child: MenuHome()
+      })
     ]
   });
 }
@@ -155,7 +160,7 @@ function Toolbar(stateCheck: any = []) {
           child: Center({
             child: TextField({
               placeholder: "Search ...",
-              endIcon: Icon( search.length ? "close" :"search", {
+              endIcon: Icon(search.length ? "close" : "search", {
                 cursor: "pointer",
                 onClick: () => setSearch("")
               }),
@@ -340,7 +345,7 @@ const dummyData = [
     Phone: "082123456789",
     Address: "Jl. Hayam Wuruk No. 888, Kupang, Indonesia"
   }
-].slice(0, 1);
+];
 
 function Header(ref: any, refBody: any, stateCheck: any) {
   const [checkAll, setCheckAll] = useState(false);
@@ -414,7 +419,7 @@ function Header(ref: any, refBody: any, stateCheck: any) {
 
 function Body(ref: any, refBody: any, stateCheck: any) {
   const [select, setSelect] = useState(-1);
-  
+
   return Expanded({
     child: SingleChildScrollView({
       child: Column({
@@ -429,7 +434,11 @@ function Body(ref: any, refBody: any, stateCheck: any) {
             onMouseEnter: () => setHover(true),
             onMouseLeave: () => setHover(false),
             onClick: () => {
-              setSelect(index);
+              if (!refc) {
+                setSelect(index);
+              } else {
+                setSelect(-1);
+              }
               setRefc(!refc);
             },
             children: [
@@ -489,6 +498,28 @@ function Body(ref: any, refBody: any, stateCheck: any) {
             ]
           })
         })
+      })
+    })
+  });
+}
+
+function MenuHome() {
+  const store = useStoreData();
+  
+  return Container({
+    child: Column({
+      children: store.getMenu("Home").map((item) => {
+        return Container({
+          padding: 10,
+          borderBottom: "1px solid theme.border",
+          cursor: "pointer",
+          backgroundColor: store.state.selectMenu === item.label ? "theme.active" : "transparent",
+          onClick: () => {
+            // store.setFilterMenu(item.label);
+            Modal({ child: Widget(Trin) });
+          },
+          child: Text(item.label)
+        });
       })
     })
   });
