@@ -1,5 +1,5 @@
 import useLocalState from "../../contexts/useLocalState";
-import { Center, Checkbox, Column, Container, Expanded, Rows, SingleChildScrollView, Text } from "../../System/Lib/Widgets";
+import { Center, Checkbox, Column, Container, Divider, Expanded, Icon, ListItemText, Menu, MenuItem, Rows, SingleChildScrollView, Space, Text } from "../../System/Lib/Widgets";
 import { useBodyRef } from "../../context/useBodyRef";
 import { useHeaderRef } from "../../context/useHeaderRef";
 import { useEffect, useState } from "react";
@@ -16,27 +16,26 @@ export default function BodyTable() {
   const [modeShift, setModeShift] = useState<boolean>(false);
   const [startNumber, setStartNumber] = useState<number>(-1);
 
-
   useEffect(() => {
     const handleMouseDown = (e: any) => {
       if (e.shiftKey) {
         console.log("Activate");
         setModeShift(true);
       }
-      if(e.key == "Escape") {
+      if (e.key == "Escape") {
         console.log("Clean All");
         setModeShift(false);
         setStartNumber(-1);
         store.setCheckIndex();
       }
     };
-    
+
     window.addEventListener("keydown", handleMouseDown);
     return () => {
       window.removeEventListener("keydown", handleMouseDown);
     };
   }, [modeShift]);
-  
+
   return Expanded({
     child: Rows({
       children: [
@@ -54,13 +53,13 @@ export default function BodyTable() {
               }
             },
             child: Column({
-              children: datastore.map((data: any, x: number) => {
+              children: store.getData().map((data: any, x: number) => {
                 return Rows({
                   onMouseMove: (e: any) => {
-                    if(modeShift) {
+                    if (modeShift) {
                       console.log("setup....")
                       store.setCheckIndex();
-                      for(let i = startNumber; i < x; i++) {
+                      for (let i = startNumber; i < x; i++) {
                         store.setCheckByIndex({ index: i, value: true });
                       }
                     }
@@ -102,26 +101,26 @@ export default function BodyTable() {
           child: SingleChildScrollView({
             ref: bodyRef,
             onMouseEnter: () => {
-                store.setScrollMode("body");
+              store.setScrollMode("body");
             },
             onScroll: (e: any) => {
-                if (scrollMode === "body") {
-                  if(splitRef && splitRef) {
-                    splitRef!.current!.scrollTop = e.target.scrollTop;
-                    headerRef!.current!.scrollLeft = e.target.scrollLeft;
-                  }
+              if (scrollMode === "body") {
+                if (splitRef && splitRef) {
+                  splitRef!.current!.scrollTop = e.target.scrollTop;
+                  headerRef!.current!.scrollLeft = e.target.scrollLeft;
                 }
+              }
             },
             child: Container({
               width: fields.reduce((acc, field) => acc + field.width, 0),
-              height: 51 * (datastore.length + 0),
+              height: 51 * (store.getData().length + 0),
               borderBottom: "0px",
               child: Column({
-                children: datastore.map((data: any, x: number) => {
+                children: store.getData().map((data: any, x: number) => {
                   return Rows({
                     color: checkIndex[x] ? "theme.active" : (hoverIndex == x ? "theme.hover" : "theme.background"),
                     width: fields.reduce((acc, field) => acc + field.width, 0),
-                    height: 50, 
+                    height: 50,
                     borderBottom: "1px solid theme.border",
                     onMouseEnter: () => setHoverIndex(x),
                     onMouseLeave: () => setHoverIndex(-1),
@@ -134,6 +133,40 @@ export default function BodyTable() {
                     children: fields.map((field) => {
                       return Container({
                         width: field.width, borderRight: "1px solid theme.border",
+                        onContextMenu: (e: any) => {
+                          const menu = Menu(e, {
+                            children: [
+                              { label: "Edit", icon: "edit" },
+                              { label: "Copy", icon: "copy" },
+                              { label: "Cut", icon: "cut" },
+                              { label: "Paste", icon: "paste" },
+                              { label: "Duplicate", icon: "duplicate" },
+                              { label: "Move", icon: "play" },
+                              "Divider",
+                              { label: "Delete", icon: "delete" }
+                            ].map((item: any) => {
+                              if (item === "divider") {
+                                return Divider({ width: 300 });
+                              }
+                              return MenuItem({
+                                onClick: () => {
+                                  menu.unMounting();
+                                },
+                                child: ListItemText({
+                                  child: Rows({
+                                    width: 300,
+                                    children: [
+                                      item.icon
+                                        ? Container({ width: 30, child: Icon(item.icon) })
+                                        : Space(30),
+                                      Text(item.label)
+                                    ]
+                                  })
+                                })
+                              });
+                            })
+                          })
+                        },
                         child: Center({
                           boxSizing: "border-box",
                           justifyContent: field.title == "No" ? "center" : "start",

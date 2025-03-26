@@ -26,7 +26,9 @@ function App() {
   const store = useLocalState();
 
   useEffect(() => {
-    store.setData(dummyData);
+    store.setData([
+      ...dummyData,
+    ]);
   }, []);
 
   return Root({

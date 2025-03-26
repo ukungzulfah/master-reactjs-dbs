@@ -226,6 +226,11 @@ const useLocalState = buildingStore(
         checkCheckedByIndex: (index: number) => {
             return getState().checkIndex[index];
         },
+        getData: () => {
+            return getState().datastore.filter((item) => {
+                return item.Name.toLowerCase().includes(getState().search.toLowerCase());
+            });
+        }
     })
 );
 

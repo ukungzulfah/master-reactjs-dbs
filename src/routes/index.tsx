@@ -9,12 +9,14 @@ import Sample from "../layouts/Sample";
 import Trin from "../layouts/Trin";
 import SimpleState from "../layouts/SimpleState";
 import TableSample from "../layouts/TableSample";
+import RouteSample from "../layouts/RouteSample";
 
 const AppRoutes = () => {
 
   return (
     <Router>
       <Routes>
+        <Route path="/route" element={<RouteSample />}></Route>
         <Route path="/table" element={<TableSample />}></Route>
         <Route path="/state" element={<SimpleState />}></Route>
         <Route path="/trin" element={<Trin />}></Route>
