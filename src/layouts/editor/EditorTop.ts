@@ -1,4 +1,4 @@
-import {Button, Center, Click, Container, Expanded, Input, Rows, SizedBox, Space, Text, Menu, MenuItem, ListItemText, Divider, Confirm, IconMui, Tooltip } from '../../System/Lib/Widgets';
+import {Button, Center, Click, Container, Expanded, Input, Row, SizedBox, Space, Text, Menu, MenuItem, ListItemText, Divider, Confirm, IconMui, Tooltip, Widget } from '../../System/Lib/Widgets';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import { buildTreeInverted, convertTreeToReactFlow } from '../../utils/buildTreeInverted';
@@ -21,28 +21,28 @@ interface ButtonConfig {
 const buttons: ButtonConfig[] = [
   {
     label: "Run Flow",
-    icon: IconMui(PlayCircleOutlineIcon),
+    icon: PlayCircleOutlineIcon,
     backgroundColor: "green",
     click: () => {
     }
   },
   {
     label: "Reset Flow",
-    icon: IconMui(RotateLeftIcon),
+    icon: RotateLeftIcon,
     backgroundColor: "red",
     click: () => {
     }
   },
   {
     label: "Import Flow",
-    icon: IconMui(SyncProblemIcon),
+    icon: SyncProblemIcon,
     backgroundColor: "orange",
     click: () => {
     }
   },
   {
     label: "Lock Flow",
-    icon: IconMui(LockOpenIcon),
+    icon: LockOpenIcon,
     backgroundColor: "purple",
     click: () => {
       
@@ -50,7 +50,7 @@ const buttons: ButtonConfig[] = [
   },
   {
     label: "Export Flow",
-    icon: IconMui(ExitToAppIcon),
+    icon: ExitToAppIcon,
     backgroundColor: "blue",
     click: ({nodes, edges}: any) => {
       console.log(({ nodes, edges }));
@@ -77,12 +77,12 @@ export default function HeaderTop() {
   const nodes = useSelector((state: RootState) => state.flow.nodes);
   const edges = useSelector((state: RootState) => state.flow.edges);
 
-  return Container({
+  const root = () => Container({
     height: 35,
     color: "#ccc",
     padding: 5,
     borderBottom: "1px solid #555",
-    child: Rows({
+    child: Row({
       children: [
         Space(5),
         Container({
@@ -97,10 +97,10 @@ export default function HeaderTop() {
                   return MenuItem({
                     onClick: () => menu.unMounting(),
                     child: ListItemText({
-                      child: Rows({
+                      child: Row({
                         children: [
                           item.icon 
-                            ? Container({ width: 30, childReact: item.icon })
+                            ? Container({ width: 30, child: item.icon })
                             : SizedBox({ width: 30 }),
                           Text(item.label)
                         ]
@@ -123,6 +123,8 @@ export default function HeaderTop() {
         }),
         ...buttons.map((button) => {
           return Container({
+            marginLeft: 10,
+            fontColor: "white",
             child: Tooltip({
               title: button.label,
               child: Button("", {
@@ -134,75 +136,25 @@ export default function HeaderTop() {
           })
         }),
         Space(5),
-        // Select({
-        //   width: 200,
-        //   label: "Select Number",
-        //   value: "one",
-        //   onChange: (e: any) => {
-        //     console.log(e.target.value);
-        //   },
-        //   children: [
-        //     MenuItem({
-        //       value: "one",
-        //       child: Text("One")
-        //     }),
-        //     MenuItem({
-        //       value: "two",
-        //       child: Text("Two")
-        //     }),
-        //     MenuItem({
-        //       value: "three",
-        //       child: Text("Three")
-        //     })
-        //   ]
-        // }),
-        // Container({
-        //   width: 200,
-        //   child: Switch({ 
-        //     onChange: (e: any) => {
-        //       console.log(e.target.checked);
-        //     }
-        //   })
-        // }),
-        // Container({
-        //   width: 200,
-        //   child: TextField({
-        //     label: "Input",
-        //     value: "oke",
-        //     onChange: (e: any) => {
-        //       console.log(e.target.value);
-        //     }
-        //   })
-        // }),
-        // Container({
-        //   width: 200,
-        //   child: CircularProgress({
-            
-        //   })
-        // }),
         Expanded(),
         Container({
           child: Button("Save Data", {
-            icon: IconMui(DataSaverOnIcon),
+            icon: DataSaverOnIcon,
             backgroundColor: "green",
+            fontColor: "white",
             click: () => {
-              // Snackbar();
               Confirm({onAccept: () => {
                 console.log("OKE");
               }});
-              // Prompt({
-              //   ask: "Masukan Nama",
-              //   value: "ukung",
-              //   onAccept: (value: string) => {
-              //     console.log("OKE", value);
-              //   }
-              // });
             }
           })
         }),
+        Space(10),
       ]
     })
-  });
+  }).builder();
+
+  return Widget(root);
 }
 
 

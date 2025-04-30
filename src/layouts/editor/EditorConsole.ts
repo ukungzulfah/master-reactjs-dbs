@@ -1,5 +1,5 @@
 import {
-  Center, Click, Column, Container, Expanded, Icon, IconMui, Positioned, Root, Rows, SizedBox, Text, Widget
+  Center, Click, Column, Container, Expanded, Icon, IconMui, Positioned, Root, Row, Rows, SizedBox, Text, Widget
 } from "../../System/Lib/Widgets";
 import EditorStructure from "./EditorStructure";
 import { useEffect, useState } from 'react';
@@ -16,17 +16,17 @@ import {
 import EditorCode from "./EditorCode";
 
 const tabs = [
-  { label: "Structure", icon: IconMui(ViewModuleIcon), component: Widget(EditorStructure) },
-  { label: "Debug", icon: IconMui(BugReportIcon), component: Root().builder() },
-  { label: "Kode", icon: IconMui(CodeIcon), component: Widget(EditorCode) },
-  { label: "Logs", icon: IconMui(ArticleIcon), component: Root().builder() },
-  { label: "Output", icon: IconMui(InfoIcon), component: Root().builder() },
+  { label: "Structure", icon: ViewModuleIcon, component: Widget(EditorStructure) },
+  { label: "Debug", icon: BugReportIcon, component: Root().builder() },
+  { label: "Kode", icon: CodeIcon, component: Widget(EditorCode) },
+  { label: "Logs", icon: ArticleIcon, component: Root().builder() },
+  { label: "Output", icon: InfoIcon, component: Root().builder() },
 ];
 
 const icons = {
-  hide: IconMui(ExpandMoreIcon),
-  close: IconMui(UnfoldLessIcon),
-  full: IconMui(OpenInFullIcon)
+  hide: ExpandMoreIcon,
+  close: UnfoldLessIcon,
+  full: OpenInFullIcon
 };
 
 export default function EditorConsole() {
@@ -42,7 +42,7 @@ export default function EditorConsole() {
     if (activeTab !== -1) setHide(false);
   }, [activeTab]);
 
-  return Positioned({
+  const root = () => Positioned({
     left: 0,
     bottom: 0,
     height: full ? "100%" : hide ? 30 : "40%",
@@ -54,7 +54,7 @@ export default function EditorConsole() {
         children: [
           Container({
             height: 30,
-            child: Rows({
+            child: Row({
               children: [
                 ...tabs.map((tab, index) => Click({
                   paddingLeft: 20,
@@ -62,11 +62,11 @@ export default function EditorConsole() {
                   borderRight: "1px solid #999",
                   backgroundColor: activeTab === index ? "#aaa" : "",
                   click: () => setActiveTab(index),
-                  child: Rows({
+                  child: Row({
                     justifyContent: "center",
                     alignItems: "center",
                     children: [
-                      Icon(tab.icon, { color: activeTab === index ? "#000" : "#666", size: 12 }),
+                      IconMui(tab.icon, { fontColor: activeTab === index ? "#000" : "#666", size: 20 }),
                       SizedBox({ width: 5 }),
                       Text(tab.label, { fontWeight: "bold", color: activeTab === index ? "#000" : "#666" })
                     ]
@@ -79,12 +79,16 @@ export default function EditorConsole() {
                     if (activeTab < 0) setActiveTab(0);
                     setHide(!hide);
                   },
-                  child: Center({ child: Icon(hide ? icons.close : icons.hide, { color: "black" }) })
+                  child: Center({
+                    child: IconMui(hide ? icons.close : icons.hide, { fontColor: "black" })
+                  })
                 }),
                 (!full && !hide) && Click({
                   width: 30,
                   click: () => setFull(!hide),
-                  child: Center({ child: Icon(icons.full, { color: "black", size: 5 }) })
+                  child: Center({
+                    child: IconMui(icons.full, { fontColor: "black", size: 5 })
+                  })
                 })
               ]
             })
@@ -92,10 +96,12 @@ export default function EditorConsole() {
           !hide && Expanded({
             color: "#f9f9f9",
             overflow: "auto",
-            childReact: tabs[activeTab].component
+            child: tabs[activeTab].component
           })
         ]
       })
     }),
-  });
+  }).builder();
+
+  return Widget(root);
 }

@@ -1,4 +1,4 @@
-import { Center, Click, Column, Container, Divider, Expanded, IconMui, ListItemText, Menu, MenuItem, Positioned, Rows, SizedBox, Stack, Text, Widget } from "../../System/Lib/Widgets";
+import { Center, Click, Column, Container, Divider, Expanded, IconMui, ListItemText, Menu, MenuItem, Positioned, Row, Rows, SizedBox, Stack, Text, Widget } from "../../System/Lib/Widgets";
 import { DataNode, DataWidget } from "../../contexts/NodeWidgetType";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -46,10 +46,10 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
           return MenuItem({
             onClick: () => menu.unMounting(),
             child: ListItemText({
-              child: Rows({
+              child: Row({
                 children: [
                   item.icon
-                    ? Container({ width: 30, childReact: item.icon })
+                    ? Container({ width: 30, child: item.icon })
                     : SizedBox({ width: 30 }),
                   Text(item.label)
                 ]
@@ -62,7 +62,7 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
     child: Column({
       children: [
         Expanded({
-          child: Rows({
+          child: Row({
             children: [
               SizedBox({ width: 10 }),
               Widget(HandleConfig, { handles: handleConfig }),
@@ -71,13 +71,13 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
                 radius: 10,
                 shadow: true,
                 border: `3px solid ${selectedNode?.id == datacustom.id ? 'yellow' : 'transparent'}`,
-                child: Rows({
+                child: Row({
                   children: [
                     Expanded({
                       overflow: "hidden",
                       child: Stack({
                         children: [
-                          Rows({
+                          Row({
                             alignItems: "center",
                             justifyContent: "center",
                             children: [
@@ -104,7 +104,7 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
                               click: () => {
                                 NodeEditor(datacustom);
                               },
-                              child: IconMui(SettingsIcon, { color: "black", size: 20 })
+                              child: IconMui(SettingsIcon, { fontColor: "black", size: 20 })
                             })
                           })
                         ]
@@ -117,7 +117,7 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
             ]
           })
         }),
-        Rows({
+        Row({
           children: [
             Expanded({
               padding: 5,

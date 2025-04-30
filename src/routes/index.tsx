@@ -30,7 +30,8 @@ const AppRoutes = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainLayout />}></Route>
+        {/* <Route path="/" element={<MainLayout />}></Route> */}
+        <Route path="/" element={<EditorLayout />}></Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

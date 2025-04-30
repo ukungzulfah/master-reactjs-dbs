@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Column, Container, Expanded, Text, Rows, Button, Center, Space, SingleChildScrollView, Icon, Menu, ListItemText, MenuItem, Stack } from "../../../System/Lib/Widgets";
+import { Column, Container, Expanded, Text, Rows, Button, Center, Space, SingleChildScrollView, Icon, Menu, ListItemText, MenuItem, Stack, Widget, Row, Positioned } from "../../../System/Lib/Widgets";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../../store";
 import { setNodesFromState } from "../../../store/editor/flowSlice";
@@ -12,7 +12,7 @@ export default function EditorRequest(dataNode: DataNode) {
       children: [
         Container({
           color: "#000000bf",
-          child: Rows({
+          child: Row({
             children: [
               Expanded({
                 marginLeft: 50,
@@ -60,7 +60,11 @@ function Editor(dataNode: DataNode) {
   const data = nodes.filter((x: any) => x.id == dataNode.id)[0].data;
   const [method, setMethod] = useState(data.option?.method || "GET");
 
-  return Container({
+  const root = () => Positioned({
+    left: 50,
+    top: 50,
+    width: 460,
+    height: 500,
     child: Column({
       children: [
         Container({
@@ -93,7 +97,7 @@ function Editor(dataNode: DataNode) {
                     height: 35,
                     child: Button("Test Nodes", {
                       confirm: true,
-                      icon: "bug_report",
+                      // icon: "bug_report",
                       click: () => {
                         const newNode = nodes.map((node: any) => {
                           if (node.id == dataNode.id) {
@@ -202,5 +206,7 @@ function Editor(dataNode: DataNode) {
         }),
       ]
     })
-  });
+  }).builder();
+
+  return Widget(root);
 }

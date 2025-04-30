@@ -1,4 +1,4 @@
-import { Center, Click, Column, Container, Expanded, Rows, SingleChildScrollView, SizedBox, Text } from "../../System/Lib/Widgets";
+import { Center, Click, Column, Container, Expanded, Row, SingleChildScrollView, SizedBox, Text, Widget } from "../../System/Lib/Widgets";
 import incoming from '../../assets/icon/incoming-request.png';
 import token from '../../assets/icon/token-validate.png';
 import core from '../../assets/icon/url.png';
@@ -133,10 +133,11 @@ export const datawidget: DataWidget[] = [
   }
 ];
 
-export default function EditorRight(hideSideRight: boolean) {
+export default function EditorRight(props: any) {
+  const hideSideRight: boolean = props.hideSideRight;
   const dispatch = useDispatch();
 
-  return Container({
+  const root = () => Container({
     borderLeft: "1px solid #555",
     child: Column({
       children: [
@@ -150,10 +151,11 @@ export default function EditorRight(hideSideRight: boolean) {
                   height: 50,
                   shadow: true,
                   borderRadius: 15,
+                  width: "unset",
                   child: Click({
                     borderRadius: 15,
                     click: () => dispatch(addNode(item)),
-                    child: Rows({
+                    child: Row({
                       children: [
                         Container({
                           width: hideSideRight ? 70 : 40,
@@ -187,5 +189,7 @@ export default function EditorRight(hideSideRight: boolean) {
         }),
       ]
     })
-  });
+  }).builder();
+
+  return Widget(root);
 }

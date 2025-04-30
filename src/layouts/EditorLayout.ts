@@ -1,4 +1,4 @@
-import { Column, Container, Expanded, Root, Rows, Stack, Widget } from '../System/Lib/Widgets';
+import { Column, Container, Expanded, Root, Row, Rows, Space, Stack, Widget } from '../System/Lib/Widgets';
 import EditorRight from './editor/EditorRight';
 import HeaderTop from './editor/EditorTop';
 import EditorConsole from './editor/EditorConsole';
@@ -8,7 +8,8 @@ import FlowEditor from '../pages/FlowEditor';
 
 function EditorLayout() {
   const [hideSideRight, setHideSideRight] = useState(true);
-  return Root({
+
+  const root = () => Root({
     backgroundColor: "black",
     color: "white",
     child: Stack({
@@ -18,20 +19,20 @@ function EditorLayout() {
             children: [
               HeaderTop(),
               Expanded({
-                child: Rows({
+                child: Row({
                   children: [
                     Expanded({
                       child: Stack({
                         children: [
                           Widget(FlowEditor),
-                          EditorConsole(),
+                          Widget(EditorConsole),
                         ]
                       })
                     }),
                     Container({
                       width: hideSideRight ? 75 : 300, color: "#ccc",
-                      child: EditorRight(hideSideRight)
-                    })
+                      child: Widget(EditorRight, { hideSideRight })
+                    }),
                   ]
                 })
               }),
@@ -42,6 +43,8 @@ function EditorLayout() {
       ]
     })
   }).builder();
+
+  return Widget(root);
 }
 
 export default EditorLayout;
