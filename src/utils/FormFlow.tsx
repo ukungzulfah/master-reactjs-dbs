@@ -26,10 +26,10 @@ export function BuildingEditor(props: any) {
   const logging = storeLogging();
   const jsonReq = logging.state.logging.find((item: any) => item.nodeId == dataNode.id && item.type == "node_start") || {};
   const jsonRes = logging.state.logging.find((item: any) => item.nodeId == dataNode.id && item.type == "node_complete") || {};
-  // console.log("request ===> ", jsonReq);
-  // console.log("response ===> ", jsonRes);
-  const request = jsonReq.result || {};
-  const response = (jsonRes.result || {});
+  const jsonError = logging.state.logging.find((item: any) => item.nodeId == dataNode.id && item.type == "node_error") || {};
+
+  const request =  (jsonReq.result || {});
+  const response = (jsonError || {}).result || (jsonRes.result || {});
   const name = dataNode.data.option.name;
 
 

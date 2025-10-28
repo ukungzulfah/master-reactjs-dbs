@@ -25,7 +25,6 @@ export default function HeaderTop() {
   const bufferRef = useRef<any[]>([]);
   const [projectSelected, setProjectSelected] = useState<any>("Select Project");
   const [_, setFlow] = useState<ApiItem | null>(null);
-  const [flowPath, setFlowPath] = useState<any>('');
   const [menuItem, setMenuItem] = useState<any>(menuItems);
   const [sockConnect, setSockConnect] = useState<boolean>(false);
   const socketConnection = useRef<any>({});
@@ -56,6 +55,11 @@ export default function HeaderTop() {
     }
 
     switch (data.type) {
+      case 'node_error':
+        store.setError(nodeSelect);
+        log.setRunTime(RuntimeFlow.error);
+        break;
+
       case 'flow_start':
         log.setRunTime(RuntimeFlow.running);
         break;
@@ -147,16 +151,16 @@ export default function HeaderTop() {
     }
   }, [proj.state.selectProject]);
 
+  // Jangan set flowPath di sini, biarkan child component yang handle
   useEffect(() => {
     const selected = proj.state.listProject.filter((p: any) => p.projectId === proj.state.selectProject);
     if (selected.length > 0) {
       const flow = selected[0].child.filter((item: any) => item.flowId === proj.state.selectChild);
       if (flow.length > 0) {
         setFlow(flow[0]);
-        setFlowPath(flow[0].path);
+        // Jangan set flowPath di sini
       } else {
         setFlow(null);
-        setFlowPath('');
       }
     }
   }, [proj.state.selectChild]);
@@ -223,7 +227,7 @@ export default function HeaderTop() {
         Space(10),
         Container({
           width: 300,
-          child: <AutoCompletePathMUI flowPath={flowPath} setFlowPath={setFlowPath} />
+          child: <AutoCompletePathMUI />
         }),
         ...buttons.map((button) => {
           return Container({
@@ -351,7 +355,7 @@ export default function HeaderTop() {
                   alert("Please select project");
                   return;
                 }
-                if (!flowPath) {
+                if (!proj.state.flowPath) {
                   alert("Please enter path");
                   return;
                 }
@@ -362,12 +366,12 @@ export default function HeaderTop() {
                 const dataSend = {
                   nodes: store.state.nodes,
                   edges: clearingEdges({ nodes: store.state.nodes, edges: store.state.edges }),
-                  flowPath,
+                  flowPath: proj.state.flowPath,
                   projectId: proj.state.selectProject,
                 };
 
                 const dataForm = {
-                  flow_path: flowPath,
+                  flow_path: proj.state.flowPath,
                   flow_project: proj.state.selectProject,
                   flow_data: JSON.stringify(dataSend),
                 };
@@ -392,7 +396,7 @@ export default function HeaderTop() {
                   alert("Please select project");
                   return;
                 }
-                if (!flowPath) {
+                if (!proj.state.flowPath) {
                   alert("Please enter path");
                   return;
                 }
@@ -403,7 +407,7 @@ export default function HeaderTop() {
                 const dataSend = {
                   nodes: store.state.nodes,
                   edges: clearingEdges({ nodes: store.state.nodes, edges: store.state.edges }),
-                  flowPath,
+                  flowPath: proj.state.flowPath,
                   projectId: proj.state.selectProject,
                   flowId: proj.state.selectChild
                 };
@@ -423,12 +427,16 @@ export default function HeaderTop() {
   }).builder();
 }
 
-const AutoCompletePathMUI = ({ flowPath, setFlowPath }: { flowPath: string; setFlowPath: (path: string) => void }) => {
+const AutoCompletePathMUI = () => {
   const proj = storeProject();
   const store = storeNode();
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<any>(null);
+  
+  // Get flowPath from Redux
+  const flowPath = proj.state.flowPath;
 
   // Load history dari localStorage
   const loadHistory = () => {
@@ -462,19 +470,6 @@ const AutoCompletePathMUI = ({ flowPath, setFlowPath }: { flowPath: string; setF
     }
   };
 
-  // Sync flowPath dengan selected flow
-  useEffect(() => {
-    const selected = proj.state.listProject.filter((p: any) => p.projectId === proj.state.selectProject);
-    if (selected.length > 0) {
-      const flow = selected[0].child.filter((item: any) => item.flowId === proj.state.selectChild);
-      if (flow.length > 0) {
-        setFlowPath(flow[0].path);
-      } else {
-        setFlowPath('');
-      }
-    }
-  }, [proj.state.selectChild, proj.state.selectProject]);
-
   // Load history saat TextField kosong
   useEffect(() => {
     if (open && flowPath.trim().length === 0 && !loading) {
@@ -483,8 +478,17 @@ const AutoCompletePathMUI = ({ flowPath, setFlowPath }: { flowPath: string; setF
     }
   }, [open, flowPath, loading]);
 
-  const handleInputChange = (_event: any, newInputValue: string) => {
-    setFlowPath(newInputValue);
+  const handleInputChange = (_event: any, newInputValue: string, reason: string) => {
+    console.log("handleInputChange:", newInputValue, "reason:", reason);
+    
+    // Jangan update state saat reason adalah 'reset' (ketika item dipilih)
+    // Biarkan handleChange yang handle
+    if (reason === 'reset') {
+      return;
+    }
+    
+    // Update input text via Redux
+    proj.setFlowPath(newInputValue);
     
     if (newInputValue.trim().length > 1) {
       setLoading(true);
@@ -502,26 +506,46 @@ const AutoCompletePathMUI = ({ flowPath, setFlowPath }: { flowPath: string; setF
         .finally(() => {
           setLoading(false);
         });
-    } else {
+    } else if (newInputValue.trim().length === 0) {
       // Tampilkan history kalau kosong
       const history = loadHistory();
       setOptions(history);
     }
   };
 
-  const handleChange = (_event: any, newValue: any) => {
-    if (newValue && typeof newValue === 'object') {
+  const handleChange = (_event: any, newValue: any, reason: string) => {
+    console.log("handleChange triggered with:", newValue, "reason:", reason);
+    
+    if (newValue && typeof newValue === 'object' && newValue.flow_path) {
       const flowData = newValue;
+      const pathToSet = flowData.flow_path;
+      
+      console.log("Setting flow path to:", pathToSet);
+      
+      // Set selected object DAN path text via Redux
+      setSelectedValue(flowData);
+      proj.setFlowPath(pathToSet);
+      
+      console.log("UI TextField value after setFlowPath:", pathToSet);
       
       // Save ke history
       saveToHistory(flowData);
       
+      // Update editor
       proj.setFlow(flowData.flow_id);
       const parsedData = JSON.parse(flowData.flow_data);
       store.setNodes(parsedData.nodes);
       store.setEdges(parsedData.edges);
-      setFlowPath(flowData.flow_path);
+      
       Snackbar({ message: `Flow loaded: ${flowData.flow_name}` });
+    } else if (typeof newValue === 'string') {
+      // User mengetik manual
+      setSelectedValue(null);
+      proj.setFlowPath(newValue);
+    } else if (newValue === null) {
+      // User cleared the field
+      setSelectedValue(null);
+      proj.setFlowPath('');
     }
   };
 
@@ -533,14 +557,22 @@ const AutoCompletePathMUI = ({ flowPath, setFlowPath }: { flowPath: string; setF
       onClose={() => setOpen(false)}
       options={options}
       loading={loading}
-      value={flowPath}
+      value={selectedValue}
       inputValue={flowPath}
       onInputChange={handleInputChange}
       onChange={handleChange}
       getOptionLabel={(option: any) => {
+        if (!option) return '';
         if (typeof option === 'string') return option;
         return option.flow_path || '';
       }}
+      isOptionEqualToValue={(option: any, value: any) => {
+        if (!option || !value) return false;
+        if (typeof option === 'string' && typeof value === 'string') return option === value;
+        return option.flow_id === value.flow_id;
+      }}
+      filterOptions={(options) => options}
+      noOptionsText="No flows found"
       renderOption={(props, option: any) => (
         <li {...props} key={option.flow_id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px' }}>
           <div style={{ fontWeight: 'bold', fontSize: '0.9em' }}>

@@ -247,24 +247,40 @@ function ListApi(store: any, closeModal: Function) {
 
 
 
+// Fungsi untuk menyimpan ke localStorage history (untuk AutoCompletePathMUI di EditorTop)
+const saveFlowToHistory = (flowData: any) => {
+  try {
+    const historyStr = localStorage.getItem('flow_path_history');
+    let history: any[] = historyStr ? JSON.parse(historyStr) : [];
+    
+    // Hapus duplikat jika ada
+    history = history.filter((item: any) => item.flow_id !== flowData.flow_id);
+    
+    // Tambahkan di depan
+    history.unshift(flowData);
+    
+    // Limit 10 items
+    if (history.length > 10) {
+      history = history.slice(0, 10);
+    }
+    
+    localStorage.setItem('flow_path_history', JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to save flow to history:', error);
+  }
+};
+
 function RenderApiList(search: string, closeModal: Function) {
   const node = storeNode();
   const store = storeProject();
   const [filteredApis, setFilteredApis] = useState<ApiItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-
-  useEffect(() => {
-    const child = store.getChildByProjectId(store.state.selectProject);
-    if (search) {
-      setFilteredApis(child.filter((api: any) => api.name.toLowerCase().includes(search.toLowerCase())));
-    } else {
-      setFilteredApis(child);
-    }
-  }, [store.state.listProject]);
-
+  // Fetch API list when project is selected
   useEffect(() => {
     const project = store.getProjectById(store.state.selectProject) || null;
     if (project) {
+      setIsLoading(true);
       ServiceFlow.getByProject(project.projectId.toString()).then((response: any) => {
         const childs: ApiItem[] = response.map((e: any) => {
           return {
@@ -275,7 +291,6 @@ function RenderApiList(search: string, closeModal: Function) {
             data: JSON.parse(e.flow_data),
           } as ApiItem;
         });
-        setFilteredApis(childs);
 
         // Update the project with the new child data
         const copy = store.state.listProject.map((p: any) => ({ ...p }));
@@ -284,13 +299,25 @@ function RenderApiList(search: string, closeModal: Function) {
           copy[projectIndex].child = childs;
         }
         store.setProject(copy);
+        
+        // Apply search filter after data is loaded
+        if (search) {
+          setFilteredApis(childs.filter((api: any) => api.name.toLowerCase().includes(search.toLowerCase())));
+        } else {
+          setFilteredApis(childs);
+        }
+        setIsLoading(false);
       }).catch((_: any) => {
-        console.log("Err", _)
+        console.log("Err", _);
         setFilteredApis([]);
+        setIsLoading(false);
       });
+    } else {
+      setFilteredApis([]);
     }
   }, [store.state.selectProject]);
 
+  // Handle search filtering
   useEffect(() => {
     const child = store.getChildByProjectId(store.state.selectProject);
     if (search) {
@@ -298,12 +325,19 @@ function RenderApiList(search: string, closeModal: Function) {
     } else {
       setFilteredApis(child);
     }
-  }, [search, store.state.selectProject]);
+  }, [search]);
 
   if (!store.state.selectProject) {
     return Center({
       marginTop: 20,
       child: Text("Pilih proyek di sebelah kiri untuk melihat detail API.", { color: "#6c757d" })
+    });
+  }
+
+  if (isLoading) {
+    return Center({
+      marginTop: 20,
+      child: Text("Loading APIs...", { color: "#6c757d" })
     });
   }
 
@@ -355,8 +389,20 @@ function RenderApiList(search: string, closeModal: Function) {
                           Click({
                             click: () => {
                               store.setFlow(api.flowId);
+                              store.setFlowPath(api.path);
                               node.setNodes(api.data.nodes);
                               node.setEdges(api.data.edges);
+                              
+                              // Save to history cache untuk AutoCompletePathMUI
+                              const flowDataForCache = {
+                                flow_id: api.flowId,
+                                flow_name: api.name,
+                                flow_path: api.path,
+                                flow_data: JSON.stringify(api.data),
+                                flow_desc: api.description
+                              };
+                              saveFlowToHistory(flowDataForCache);
+                              
                               closeModal();
                             },
                             child: Icon("account_tree", { color: "#212529" })
@@ -397,6 +443,7 @@ function RenderApiList(search: string, closeModal: Function) {
                               // setFlow to 0 if same
                               if (store.state.selectChild === api.flowId) {
                                 store.setFlow(0);
+                                store.setFlowPath('');
                                 node.setNodes([]);
                                 node.setEdges([]);
                               }

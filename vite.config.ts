@@ -17,18 +17,18 @@ export default defineConfig({
     port: 5173, // port default Vite
   },
   plugins: [
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'src/assets/**/*',
-          dest: 'assets' // ini untuk /assets/
-        },
-        {
-          src: 'src/assets/**/*',
-          dest: 'src/assets' // ini untuk /src/assets/ fallback
-        }
-      ]
-    }),
+    // viteStaticCopy({
+    //   targets: [
+    //     {
+    //       src: 'src/assets/**/*',
+    //       dest: 'assets' // ini untuk /assets/
+    //     },
+    //     {
+    //       src: 'src/assets/**/*',
+    //       dest: 'src/assets' // ini untuk /src/assets/ fallback
+    //     }
+    //   ]
+    // }),
     react({
       babel: {
         plugins: [

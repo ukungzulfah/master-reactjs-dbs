@@ -21,6 +21,7 @@ export default buildingStore(
   {
     selectProject: 0,
     selectChild: 0,
+    flowPath: '',
     listProject: [] as ProjectItem[],
   },
   {
@@ -29,6 +30,9 @@ export default buildingStore(
     },
     setFlow(state, store) {
       state.selectChild = store.payload;
+    },
+    setFlowPath(state, store) {
+      state.flowPath = store.payload;
     },
     setProject(state, store) {
       state.listProject = store.payload;

@@ -30,13 +30,6 @@ export const buttons: ButtonConfig[] = [
         nodes, 
         edges,
       };
-      // socketConnection.send(JSON.stringify({
-      //   command: "run",
-      //   data: {
-      //     node: result,
-      //     environtment: env.getConfig()
-      //   }
-      // }));
       const fetcher = new ApiFetcher(API_URL, localStorage.getItem("auth_token") || '');
       fetcher.post("/run", {
         node: result,
@@ -46,7 +39,7 @@ export const buttons: ButtonConfig[] = [
         log.setResult(response.data);
         log.stopProcess();
         run.setRunning(false);
-        console.log("response", response.data);
+        console.log("response", response);
         if (response.success) {
         } else {
           console.log("run", run);

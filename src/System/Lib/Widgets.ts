@@ -580,7 +580,6 @@ export class Widgets {
       configuration.onMouseDown = (e: any) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log("ANJING BABI")
         if (this.props.onMouseDown) {
           this.props.onMouseDown(e)
         }
