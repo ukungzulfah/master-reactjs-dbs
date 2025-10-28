@@ -378,6 +378,16 @@ export default function HeaderTop() {
 
                 ServiceFlow.update(proj.state.selectChild.toString(), dataForm).then((response: any) => {
                   console.log("Response: ", response);
+                  
+                  // Update cache setelah successful update
+                  const flowCacheData = {
+                    flow_id: proj.state.selectChild,
+                    flow_name: proj.state.flowPath.split('/').pop() || `Flow ${proj.state.selectChild}`,
+                    flow_path: proj.state.flowPath,
+                    flow_data: JSON.stringify(dataSend),
+                  };
+                  updateFlowCache(proj.state.selectChild, flowCacheData);
+                  
                   Snackbar({ message: "Update success" });
                 }).catch((error: any) => {
                   console.log("Error: ", error.message);
@@ -426,6 +436,39 @@ export default function HeaderTop() {
     })
   }).builder();
 }
+
+// Fungsi helper untuk update cache history
+const updateFlowCache = (flowId: number, flowData: any) => {
+  try {
+    const historyStr = localStorage.getItem('flow_path_history');
+    let history: any[] = historyStr ? JSON.parse(historyStr) : [];
+    
+    // Find dan update flow dengan flowId yang sama
+    const index = history.findIndex((item: any) => item.flow_id === flowId);
+    if (index !== -1) {
+      // Update existing flow
+      history[index] = {
+        ...history[index],
+        ...flowData
+      };
+      // Move ke depan (most recent)
+      const updated = history.splice(index, 1)[0];
+      history.unshift(updated);
+    } else {
+      // Add as new if not found
+      history.unshift(flowData);
+    }
+    
+    // Limit 10 items
+    if (history.length > 10) {
+      history = history.slice(0, 10);
+    }
+    
+    localStorage.setItem('flow_path_history', JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to update flow cache:', error);
+  }
+};
 
 const AutoCompletePathMUI = () => {
   const proj = storeProject();

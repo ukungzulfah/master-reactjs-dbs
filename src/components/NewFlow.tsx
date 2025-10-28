@@ -3,6 +3,28 @@ import { Positioned, MediaQuery, Container, Column, Click, Center, Icon, Row, Ex
 import ServiceFlow from "../services/ServiceFlow";
 import storeProject from "../context/storeProject";
 
+// Fungsi helper untuk save flow ke cache history
+const saveFlowToHistory = (flowData: any) => {
+  try {
+    const historyStr = localStorage.getItem('flow_path_history');
+    let history: any[] = historyStr ? JSON.parse(historyStr) : [];
+    
+    // Hapus duplikat jika ada
+    history = history.filter((item: any) => item.flow_id !== flowData.flow_id);
+    
+    // Tambahkan di depan
+    history.unshift(flowData);
+    
+    // Limit 10 items
+    if (history.length > 10) {
+      history = history.slice(0, 10);
+    }
+    
+    localStorage.setItem('flow_path_history', JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to save flow to history:', error);
+  }
+};
 
 export default function NewFlow(props: any) {
   const [name, setName] = useState('');
@@ -124,6 +146,16 @@ export default function NewFlow(props: any) {
                             })
                             store.setProject(listClone2);
                             store.setFlow(response.flow_id);
+                            
+                            // Save to history cache
+                            const cacheData = {
+                              flow_id: response.flow_id,
+                              flow_name: response.flow_name,
+                              flow_path: response.flow_path,
+                              flow_data: response.flow_data,
+                              flow_desc: response.flow_desc
+                            };
+                            saveFlowToHistory(cacheData);
                             
                             props.closes();
                           }).catch((error: any) => {
