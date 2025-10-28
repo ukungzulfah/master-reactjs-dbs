@@ -1,4 +1,4 @@
-import { Button, Center, Column, Container, Draggable, Expanded, IconButton, Paper, Root, Rows, Space, Switch, Text, TextField, Toast } from "../System/Lib/Widgets";
+import { Button, Center, Column, Container, Draggable, Expanded, IconButton, Paper, Root, Rows, Space, Switch, Text, TextField } from "../System/Lib/Widgets";
 import { useEffect, useState } from "react";
 import LockPersonIcon from '@mui/icons-material/LockPerson';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -78,7 +78,6 @@ export default function MainLayout() {
         setLoading(true);
         setTimeout(() => {
           setLoading(false);
-          Toast("Login success");
         }, 2000);
       }
     })

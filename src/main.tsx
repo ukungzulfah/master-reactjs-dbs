@@ -3,6 +3,7 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import AppRoutes from "./routes";
 import './App.css';
+import './components/widget';
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <Provider store={store}>

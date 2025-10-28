@@ -1,8 +1,8 @@
 import Tree from 'react-d3-tree';
-import { RootState } from '../../store';
-import { useSelector } from 'react-redux';
-import { buildTreeInverted } from '../../utils/buildTreeInverted';
 import { Widget } from '../../System/Lib/Widgets';
+import storeNode from '../../context/storeNode';
+import { useEffect, useState } from 'react';
+import { buildTreeInverted } from '../../utils/buildTreeInverted';
 
 interface TreeNode {
 	name: string;
@@ -19,12 +19,29 @@ function convertToTreeFormat(data: any): TreeNode[] {
 };
 
 export default function EditorStructure() {
-	const nodes = useSelector((state: RootState) => state.flow.nodes);
-	const edges = useSelector((state: RootState) => state.flow.edges);
-	const data = convertToTreeFormat(buildTreeInverted({ nodes, edges }));
+	const store = storeNode();
+	const nodes = store.state.nodes || [];
+	const edges = store.state.edges || [];
+	const [structur, setStructure] = useState<TreeNode[]>([
+		{
+			name: 'Root',
+			children: [],
+		}
+	]);
+
+	useEffect(() => {
+		try {
+			if(nodes.length) {
+				const data = convertToTreeFormat(buildTreeInverted({ nodes, edges }));
+				setStructure(data);
+			}
+		} catch (error) {
+			
+		}
+	}, [nodes, edges]);
 
 	return Widget(Tree, {
-		data,
+		data: structur,
 		orientation: 'vertical',
 		pathFunc: 'step',
 		collapsible: true,

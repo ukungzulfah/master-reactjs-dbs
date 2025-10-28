@@ -1,4 +1,4 @@
-import React, { createRef, RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import React, { createContext, createRef, ReactNode, RefObject, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
 import * as ReactDOMClient from 'react-dom/client'
 import { Provider, useSelector } from 'react-redux'
@@ -32,6 +32,7 @@ export class Widgets {
           case 'column':
             this.props.width = this.props.width || 'unset'
             this.props.height = this.props.height || 'unset'
+            this.props.flex = this.props.flex || 'unset'
             break
 
           default:
@@ -61,6 +62,12 @@ export class Widgets {
           case 'container':
             this.props.width = this.props.width || '100%'
             this.props.height = this.props.height || '100%'
+            break
+
+          case 'rows':
+          case 'column':
+            this.props.width = this.props.width || 'unset'
+            this.props.height = this.props.height || 'unset'
             break
 
           default:
@@ -93,12 +100,12 @@ export class Widgets {
 
           case 'rows':
             this.props.width = this.props.width || 'unset'
-            this.props.height = this.props.height || 'inherit'
+            this.props.height = this.props.height || 'initial'
             break
 
           case 'column':
             this.props.height = this.props.height || 'auto'
-            this.props.width = this.props.width || '100%'
+            this.props.width = this.props.width || 'inherit'
             break
 
           default:
@@ -167,6 +174,7 @@ export class Widgets {
         this.props.overflow = 'hidden'
         switch (this.parent?.props.mode) {
           case 'column':
+          case 'container':
             this.props.width = this.props.width || '100%'
             this.props.height = this.props.height || '100%'
             break
@@ -219,10 +227,10 @@ export class Widgets {
     return this
   }
 
-  handleMouseDown = () => {}
-  handleMouseUp = () => {}
-  onMouseEnter() {}
-  onMouseLeave() {}
+  handleMouseDown = () => { }
+  handleMouseUp = () => { }
+  onMouseEnter() { }
+  onMouseLeave() { }
 
   click() {
     this.handleMouseDown = () => {
@@ -260,6 +268,20 @@ export class Widgets {
       this.props.width = '100%'
       this.props.height = '100vh'
     }
+
+    // if(this.props.child) {
+    //   if(this.props.child instanceof Widgets) {
+    //     const item = this.props.child;
+    //     item.parent = this
+    //     if (this.props.theme) {
+    //       item.props.theme = this.props.theme
+    //       item.props = this.parseTheme(item.props, this.props.theme)
+    //     }
+    //     child = item.builder(data)
+    //   } else {
+    //     return React.createElement(React.Fragment, {}, this.props.child as JSX.Element);
+    //   }
+    // }
 
     if (this.props.mode === 'rows') {
       child = this.props.children
@@ -481,6 +503,10 @@ export class Widgets {
     if (this.props.d) {
       configuration.d = this.props.d
     }
+
+    if (this.props.contentEditable != undefined) {
+      configuration.contentEditable = this.props.contentEditable;
+    }
     if (this.props.fill) {
       configuration.fill = this.props.fill
     }
@@ -498,6 +524,10 @@ export class Widgets {
     const attributes = this.props.attr || {}
     for (const key in attributes) {
       configuration[key] = attributes[key]
+    }
+
+    if (this.props.value != undefined) {
+      configuration.value = this.props.value
     }
 
     if (this.props.onContextMenu) {
@@ -548,7 +578,9 @@ export class Widgets {
 
     if (this.props.onMouseDown) {
       configuration.onMouseDown = (e: any) => {
-        e.stopPropagation()
+        e.stopPropagation();
+        e.preventDefault();
+        console.log("ANJING BABI")
         if (this.props.onMouseDown) {
           this.props.onMouseDown(e)
         }
@@ -602,6 +634,18 @@ export class Widgets {
       configuration.onKeyUp = this.props.onKeyUp
     }
 
+    if (this.props.onInput) {
+      configuration.onInput = this.props.onInput
+    }
+
+    if (this.props.onNodeClick) {
+      configuration.onNodeClick = this.props.onNodeClick
+    }
+
+    if (this.props.dangerouslySetInnerHTML) {
+      configuration.dangerouslySetInnerHTML = this.props.dangerouslySetInnerHTML
+    }
+
     if (this.props.mode === 'root-portal') {
       const portalChild = React.createElement(
         this.props.type,
@@ -631,35 +675,10 @@ export class Widgets {
         }
       }
     } else {
-      if (!configuration.key) {
-        // configuration.key = useId();
-      }
-
       if (typeof this.props.type === 'string') {
         this.portal = React.createElement(this.props.type!, configuration, child)
       } else {
         let defMui = Object.assign(configuration, this.props.mui)
-
-        if (defMui.InputProps) {
-          let startAdornment, endAdornment
-          if (defMui.InputProps.startAdornment) {
-            defMui.InputProps.startAdornment.parent = this
-            defMui.InputProps.startAdornment.props.theme = this.props.theme
-            startAdornment = defMui.InputProps.startAdornment.builder()
-          }
-          if (defMui.InputProps.endAdornment) {
-            if (defMui.InputProps.endAdornment.parent) {
-              defMui.InputProps.endAdornment.parent = this
-              defMui.InputProps.endAdornment.props.theme = this.props.theme || {}
-              endAdornment = defMui.InputProps.endAdornment.builder()
-            }
-          }
-          delete defMui.InputProps
-          defMui.InputProps = {
-            startAdornment,
-            endAdornment,
-          }
-        }
 
         if (defMui.style) {
           defMui.style = this.parseTheme(defMui.style, this.props.theme)
@@ -682,8 +701,14 @@ export class Widgets {
           }
         }
 
-        delete defMui.className
-        this.portal = React.createElement(this.props.type!, defMui, child)
+        delete defMui.className;
+        // this.portal = React.createElement(this.props.type!, defMui, child)
+        let props = { ...defMui, children: child };
+
+        if (this.props.type! === React.Fragment) {
+          props = { children: child };
+        }
+        this.portal = React.createElement(this.props.type!, props);
       }
     }
 
@@ -737,27 +762,6 @@ export class Widgets {
     })
   }
 
-  PortalComponent({ type, configuration, children, key }: any) {
-    useEffect(() => {
-      const helper = document.createElement('div')
-      document.body.appendChild(helper)
-      const portal = ReactDOMClient.createRoot(helper)
-
-      portal.render(React.createElement(type, { ...configuration, key: key || `portal-${Date.now()}` }, children))
-
-      return () => {
-        portal.unmount()
-        try {
-          document.body.removeChild(helper)
-        } catch {
-          console.log('Child has removed')
-        }
-      }
-    }, [type, configuration, children, key])
-
-    return null
-  }
-
   buildPortal() {
     this.props.mode = 'root-portal'
     return this.builder()
@@ -770,18 +774,22 @@ export class Widgets {
 
 export function Modal(props: PropsWidget = {}) {
   const defaultConfig = props.child || Positioned(getDefaultConfig(props))
-
-  const portal = Root({
+  const backdropFilter = props.backdrop == undefined ? true : props.backdrop;
+  const portal = backdropFilter == false 
+  ? (defaultConfig as Widgets).buildPortal()
+  : Root({
     key: 'modal-root',
     modal: true,
     ...props,
     child: Stack({
       children: [
         Container({
+          backgroundColor: "#00000045",
+          backdropFilter: "blur(5px)",
           onClick: () => {
             cleanup()
           },
-        }),
+        }).builder(),
         defaultConfig,
       ],
     }),
@@ -804,28 +812,98 @@ export function Modal(props: PropsWidget = {}) {
   return portal
 }
 
+
+const SnackbarContext = createContext<(msg: string) => void>(() => {});
+export function useSnackbar() {
+  return useContext(SnackbarContext);
+}
+let globalSnack: any;
+type SnackbarItem = { id: string; message: string };
 export function Snackbar(props: PropsWidget = {}) {
-  const portal = Modal({
-    theme: props.theme || {},
-    child: Positioned({
-      bottom: 20,
-      right: 20,
-      child: Container({
-        width: 'unset',
-        height: 'unset',
-        color: 'black',
-        radius: 5,
-        padding: 20,
-        maxWidth: 400,
-        child:
-          props.child ||
-          Text(props.message, {
-            color: 'white',
-          }),
-      }),
-    }),
-  })
-  return portal
+  const ellSnack = document.getElementsByClassName("snackbar-container");
+  if(ellSnack.length) {
+    globalSnack(props.message);
+    return;
+  }
+
+  const SnackEll = () => {
+    const ids = Date.now() + "-" + Math.random();
+    const [snackbars, setSnackbars] = useState<SnackbarItem[]>([
+      { id: ids, message: props.message }
+    ]);
+    const [positions, setPositions] = useState<Record<string, number>>({});
+    const refs = useRef<Record<string, HTMLDivElement | null>>({});
+  
+    globalSnack = (message: string) => {
+      const id = Date.now() + "-" + Math.random();
+      setSnackbars((prev) => [...prev, { id, message }]);
+  
+      setTimeout(() => {
+        setSnackbars((prev) => prev.filter((item) => item.id !== id));
+      }, 3000);
+    };
+  
+    // Setelah render, hitung posisi berdasarkan tinggi real
+    useEffect(() => {
+      let total = 20;
+      const newPositions: Record<string, number> = {};
+      snackbars.forEach((item) => {
+        const el = refs.current[item.id];
+        const height = el?.offsetHeight || 40;
+        newPositions[item.id] = total;
+        total += height + 10;
+      });
+      setPositions(newPositions);
+
+      setTimeout(() => {
+        setSnackbars((prev) => prev.filter((item) => item.id !== ids));
+      }, 3000);
+    }, [snackbars]);
+  
+    const Main = () =>
+      Stack({
+        children: snackbars.map((item) =>
+          Positioned({
+            key: item.id,
+            bottom: positions[item.id] ?? 20,
+            width: "100%",
+            display: "flex",
+            justifyContent: "end",
+            zIndex: 10000,
+            child: Container({
+              ref: (el: any) => {
+                refs.current[item.id] = el;
+              },
+              padding: 10,
+              paddingLeft: 20,
+              paddingRight: 20,
+              color: "black",
+              radius: 5,
+              shadow: true,
+              height: "unset",
+              width: "fit-content",
+              child:
+                typeof item.message === "string"
+                  ? Text(item.message, { color: "white" })
+                  : item.message,
+            }),
+          })
+        ),
+      }).builder();
+  
+    return Widget(Main);
+  };
+  
+  Positioned({
+    className: "snackbar-container",
+    top: 0,
+    right: 20,
+    bottom: 0,
+    width: 250,
+    height: MediaQuery.height(),
+    pointerEvents: "none",
+    child: Widget(SnackEll)
+  }).buildPortal();
 }
 
 export function Confirm(props: PropsWidget = {}) {
@@ -840,7 +918,7 @@ export function Confirm(props: PropsWidget = {}) {
         radius: 5,
         width: width,
         height: props.height || 'unset',
-        color: 'theme.backgroundPaper',
+        color: 'white',
         shadow: true,
         child: Column({
           children: [
@@ -893,55 +971,61 @@ export function Confirm(props: PropsWidget = {}) {
 }
 
 export function Alert(props: PropsWidget = {}) {
+  const width = 400
   const portal = Modal({
-    width: 300,
-    height: 100,
-    child: Container({
-      color: 'white',
-      radius: 10,
-      shadow: true,
-      padding: 10,
-      child: Column({
-        children: [
-          Expanded({
-            child: Row({
+    backdropFilter: 'blur(5px)',
+    theme: props.theme || {},
+    child: Positioned({
+      top: 100,
+      left: (MediaQuery.width() - width) / 2 + 0,
+      child: Container({
+        color: 'white',
+        radius: 10,
+        shadow: true,
+        padding: 10,
+        width,
+        child: Column({
+          children: [
+            Expanded({
+              child: Row({
+                children: [
+                  Container({
+                    width: 50,
+                    height: 50,
+                    background: `url(${notification}) no-repeat center center`,
+                    backgroundSize: 'cover',
+                  }),
+                  Space(10),
+                  Column({
+                    children: [
+                      Space(10),
+                      Text(props.title || 'Alert', { fontWeight: 'bold', size: 14 }),
+                      props.message ? Text(props.message, { size: 12 }) : SizedBox(),
+                    ],
+                  }),
+                ],
+              }),
+            }),
+            Row({
+              height: 35,
               children: [
-                Container({
+                Expanded(),
+                Button('OK', {
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                  backgroundColor: 'green',
                   width: 50,
-                  height: 50,
-                  background: `url(${notification}) no-repeat center center`,
-                  backgroundSize: 'cover',
-                }),
-                Space(10),
-                Column({
-                  children: [
-                    Space(10),
-                    Text(props.title || 'Alert', { fontWeight: 'bold', size: 14 }),
-                    props.message ? Text(props.message, { size: 12 }) : SizedBox(),
-                  ],
+                  onClick: () => {
+                    portal.unMounting()
+                    if (props.onAccept) {
+                      props.onAccept!()
+                    }
+                  },
                 }),
               ],
             }),
-          }),
-          Row({
-            height: 35,
-            children: [
-              Expanded(),
-              Button('OK', {
-                paddingLeft: 20,
-                paddingRight: 20,
-                backgroundColor: 'green',
-                width: 50,
-                onClick: () => {
-                  portal.unMounting()
-                  if (props.onAccept) {
-                    props.onAccept!()
-                  }
-                },
-              }),
-            ],
-          }),
-        ],
+          ],
+        })
       }),
     }),
   })
@@ -1057,18 +1141,18 @@ export function ButtonConfirm(text: string, { click, ...props }: PropsWidget = {
           !props.loading
             ? null
             : Positioned({
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                child: Container({
-                  color: '#00000082',
-                  radius: 8,
-                  child: Center({
-                    child: CircularProgress({ fontColor: props.fontColor }),
-                  }),
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              child: Container({
+                color: '#00000082',
+                radius: 8,
+                child: Center({
+                  child: CircularProgress({ fontColor: props.fontColor }),
                 }),
               }),
+            }),
         ],
       }),
     })
@@ -1110,8 +1194,10 @@ export function Button(text: string, props: PropsWidget = {}): any {
   props.border = props.border || 'none'
   props.cursor = props.cursor || 'pointer'
   props.transition = props.transition || 'all 0.3s ease'
-  props.backgroundColor = props.backgroundColor || 'theme.primary'
-  props.fontColor = props.fontColor || 'theme.textInverse'
+  // props.backgroundColor = props.backgroundColor || 'theme.primary'
+  props.backgroundColor = props.backgroundColor || '#26a6fe'
+  // props.fontColor = props.fontColor || 'theme.textInverse'
+  props.fontColor = props.fontColor || 'white'
   props.textColor = props.textColor || props.fontColor
   props.width = props.width || 'unset'
   props.userSelect = props.userSelect || 'none'
@@ -1121,14 +1207,14 @@ export function Button(text: string, props: PropsWidget = {}): any {
     Center({
       child: props.icon
         ? Row({
-            center: true,
-            theme: props.theme,
-            children: [
-              IconMui(props.icon, { size: 20, fontColor: props.fontColor }),
-              SizedBox({ width: props.text ? 10 : 0 }),
-              Text(props.text, { size: 14, color: props.fontColor, userSelect: 'none' }),
-            ],
-          })
+          center: true,
+          theme: props.theme,
+          children: [
+            IconMui(props.icon, { size: 20, fontColor: props.iconColor || props.fontColor }),
+            SizedBox({ width: props.text ? 10 : 0 }),
+            Text(props.text, { size: 14, color: props.fontColor, userSelect: 'none' }),
+          ],
+        })
         : Text(props.text, { textColor: props.fontColor }),
     })
 
@@ -1264,7 +1350,7 @@ export function Animated(props: PropsWidget & { builder: (value: number) => any;
     return builder(mapped)
   }
   if (props.ref.current) props.ref.current.interpolate = interpolate
-  const onended = props.onEnd || function () {}
+  const onended = props.onEnd || function () { }
 
   useEffect(() => {
     props.ref.current = {
@@ -1364,6 +1450,12 @@ export function Rows(props: PropsWidget = {}) {
   return new Widgets(props)
 }
 
+export function Span(props: PropsWidget = {}) {
+  props.mode = 'span'
+  props.type = 'span'
+  return new Widgets(props)
+}
+
 export function Container(props: PropsWidget = {}) {
   props.mode = 'container'
   props.type = 'div'
@@ -1421,6 +1513,7 @@ export function Input(props: PropsWidget = {}) {
   props.flex = 1
   props.paddingLeft = 10
   props.paddingRight = 10
+  props.height = "100%";
   return new Widgets(props)
 }
 
@@ -1441,11 +1534,17 @@ export function Positioned(props: PropsWidget = {}) {
   return new Widgets(props)
 }
 
-export function Widget(widget: any, props: any = {}, children?: any) {
-  if (children) {
-    return React.createElement(widget, props, children)
+export function Widget(
+  widget: any,
+  props: Record<string, any> = {},
+  children?: ReactNode | ReactNode[]
+) {
+  if (Array.isArray(children)) {
+    return React.createElement(widget, props, ...children);
+  } else if (children !== undefined && children !== null) {
+    return React.createElement(widget, props, children);
   } else {
-    return React.createElement(widget, props)
+    return React.createElement(widget, props);
   }
 }
 
@@ -1623,13 +1722,10 @@ export function Fab(props: PropsWidget = {}) {
 export function Tooltip(props: PropsWidget = {}) {
   props.mode = 'Tooltip'
   props.type = mui.Tooltip
-  return new Widgets({
-    ...props,
-    mui: {
-      title: props.title || '',
-      placement: props.placement || 'bottom',
-    },
-  })
+  return Widget(mui.Tooltip, {
+    title: props.title || '',
+    children: props.child
+  });
 }
 
 export function InputLabel(props: PropsWidget = {}) {
@@ -1694,7 +1790,7 @@ export function Select(props: PropsWidget = {}) {
     ...props,
     mui: {
       value: props.value,
-      onChange: props.onChange || (() => {}),
+      onChange: props.onChange || (() => { }),
       MenuProps: props.MenuProps || {},
       size: 'small',
     },
@@ -1722,7 +1818,7 @@ export function Slider(props: PropsWidget = {}) {
     mui: {
       disabled: props.disabled || false,
       defaultValue: props.defaultValue || '',
-      onChange: props.onChange || (() => {}),
+      onChange: props.onChange || (() => { }),
       value: props.value || '',
     },
   })
@@ -1731,6 +1827,7 @@ export function Slider(props: PropsWidget = {}) {
 export function FormControlLabel(props: PropsWidget = {}) {
   props.mode = 'FormControlLabel'
   props.type = mui.FormControlLabel
+  props.control = props.control.builder()
   return new Widgets({
     ...props,
     mui: {
@@ -1757,11 +1854,14 @@ export function FormControlLabel(props: PropsWidget = {}) {
 export function Switch(props: PropsWidget = {}): any {
   props.mode = 'Switch'
   props.type = mui.Switch
+  if (props.value) {
+    props.checked = props.value;
+  }
   const widget = new Widgets({
     ...props,
     mui: {
       disabled: props.disabled || false,
-      onChange: props.onChange || (() => {}),
+      onChange: props.onChange || (() => { }),
       checked: props.checked || false,
       key: props.key || 'switch-key',
       sx: {
@@ -1793,7 +1893,8 @@ export function Switch(props: PropsWidget = {}): any {
       required: props.required || false,
     })
   } else {
-    return widget
+    return widget;
+    // return widget;
   }
 }
 
@@ -1828,7 +1929,7 @@ export function Paper(props: PropsWidget = {}) {
   })
 }
 
-export function Autocomplete() {
+export function Autocomplete(props: any) {
   const [open, setOpen] = useState(false)
   const [options, setOptions] = useState<any>([])
   const [inputValue, setInputValue] = useState('')
@@ -1838,22 +1939,16 @@ export function Autocomplete() {
     let active = true
 
     if (!loading) return
-    ;(async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const result = [
-          { id: 1, name: 'Banana' },
-          { id: 2, name: 'Banana Cake' },
-          { id: 3, name: 'Banana Smoothie' },
-        ].filter(item => item.name.toLowerCase().includes(inputValue.toLowerCase()))
-
-        if (active) {
-          setOptions(result)
+      ; (async () => {
+        try {
+          const result = await props.onInputChange(null, inputValue);
+          if (active) {
+            setOptions(result)
+          }
+        } catch (e) {
+          console.error(e)
         }
-      } catch (e) {
-        console.error(e)
-      }
-    })()
+      })()
 
     return () => {
       active = false
@@ -2006,7 +2101,7 @@ export function IconButton(name: any, props: PropsWidget = {}) {
     },
     mui: {
       position: props.position || 'start',
-      onClick: props.onClick || (() => {}),
+      onClick: props.onClick || (() => { }),
       style: {
         color: props.color || 'theme.textPrimary',
         cursor: 'pointer',
@@ -2029,9 +2124,18 @@ export function Badge(props: PropsWidget = {}) {
 }
 
 export function IconMui(name: any, props: PropsWidget = {}) {
-  // return React.createElement(name, {
+  if (typeof name === "string") {
+    return Icon(name, props);
+  }
+  if (name instanceof Widgets) {
+    return name;
+  }
   props.mode = 'IconMui'
   props.type = name
+  if (props.color) {
+    props.fontColor = props.color;
+    delete props.color;
+  }
   return new Widgets({
     ...props,
     sx: {
@@ -2055,7 +2159,7 @@ export function IconComponent(name: any, props: PropsWidget = {}) {
     },
     mui: {
       position: props.position || 'start',
-      onClick: props.onClick || (() => {}),
+      onClick: props.onClick || (() => { }),
       style: {
         color: props.color || 'theme.textPrimary',
         cursor: 'pointer',
@@ -2082,14 +2186,14 @@ export function TextField(props: PropsWidget = {}) {
       position: 'end',
       style: { cursor: 'pointer' },
       child: props.endAdornment,
-    })
+    }).builder();
   }
   if (props.startAdornment) {
     InputProps.startAdornment = InputAdornment({
       position: 'start',
       style: { cursor: 'pointer' },
       child: props.startAdornment,
-    })
+    }).builder();
   }
   if (props.minLength) {
     inputProps.minLength = props.minLength
@@ -2108,8 +2212,8 @@ export function TextField(props: PropsWidget = {}) {
       value: props.value,
       placeholder: props.placeholder || '',
       label: props.label || '',
-      onChange: props.onChange || (() => {}),
-      onBlur: props.onBlur || (() => {}),
+      onChange: props.onChange || (() => { }),
+      onBlur: props.onBlur || (() => { }),
       error: props.error || false,
       helperText: props.helperText || '',
       multiline: props.multiline || false,
@@ -2134,6 +2238,8 @@ export function TextField(props: PropsWidget = {}) {
         },
         '& .MuiInputBase-input': {
           color: props.error ? 'red' : 'theme.textPrimary',
+          height: props.height || 'unset',
+          width: props.width || 'inherit',
         },
         '& .MuiFormHelperText-root': {
           color: props.error ? 'red' : 'theme.textSecondary',
@@ -2267,6 +2373,98 @@ export function Resize(props: PropsWidget = {}) {
   }).builder()
 }
 
+export function Option(props: PropsWidget = {}) {
+  const value = props.value;
+  props.onChange = typeof props.onChange === 'function' ? props.onChange : () => true;
+
+  return Container({
+    padding: 5,
+    paddingLeft: 10,
+    border: "1px solid #555",
+    radius: 5,
+    onClick: (e: any) => {
+      const menu = Menu(e, {
+        children: props.options?.map((item: any, i: number) => {
+          return MenuItem({
+            key: "menu-" + i,
+            width: 460,
+            onClick: () => {
+              menu.unMounting();
+              props.onChange!(item.label);
+            },
+            child: ListItemText({
+              child: Row({
+                children: [
+                  Expanded({
+                    child: Column({
+                      children: [
+                        Text(item.label, { fontWeight: "bold" }),
+                        Text(item.description),
+                      ]
+                    })
+                  })
+                ]
+              }),
+            })
+          });
+        })
+      });
+    },
+    child: Row({
+      children: [
+        Expanded({
+          child: Center({
+            justifyContent: "start",
+            child: Text(value, { fontWeight: "bold" })
+          })
+        }),
+        Icon("keyboard_arrow_down"),
+        Space(5),
+      ]
+    })
+  }).builder();
+}
+
+export function JsonInput({
+  value,
+  onChange
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (v: any) => {
+    setText(v.target.value);
+
+    try {
+      JSON.parse(v.target.value);
+      setError(null);
+      onChange(v.target.value);
+    } catch (err) {
+      setError("Invalid JSON");
+    }
+  };
+
+  useEffect(() => {
+    setText(value);
+  }, [value]);
+
+  return Column({
+    children: [
+      TextField({
+        value: text,
+        multiline: true,
+        minRows: 4,
+        maxRows: 10,
+        onChange: handleChange
+      }),
+      error && Text(error, { color: "#ff4444", size: 12 })
+    ]
+  }).builder();
+}
+
 export interface PropsWidget {
   // ref?: React.RefObject<HTMLDivElement | null>;
   ref?: any
@@ -2274,6 +2472,10 @@ export interface PropsWidget {
   format?: string
   className?: string
   id?: any
+  contentEditable?: any
+  dangerouslySetInnerHTML?: any
+  onNodeClick?: Function
+  onInput?: Function
   builder?: Function
   onInputChange?: Function
   getOptionLabel?: Function
@@ -2282,7 +2484,6 @@ export interface PropsWidget {
   onEnd?: Function
   onCreate?: Function
   handles?: any
-  pointerEvents?: any
   text?: string
   label?: string
   title?: string
@@ -2371,8 +2572,10 @@ export interface PropsWidget {
   contentTabs?: any[]
   direction?: string
   children?: any[]
-  radius?: number
-  gap?: number
+  radius?: number | string;
+  gap?: number | string;
+  crossAxisAlignment?: string
+  mainAxisAlignment?: string
   maxLine?: number
   placeholder?: string
   display?: string
@@ -2390,16 +2593,16 @@ export interface PropsWidget {
   aspectRatio?: number
   duration?: number
   objectFit?:
-    | 'cover'
-    | 'contain'
-    | 'fill'
-    | 'none'
-    | 'scale-down'
-    | 'unset'
-    | 'inherit'
-    | 'initial'
-    | 'revert'
-    | 'revert-layer'
+  | 'cover'
+  | 'contain'
+  | 'fill'
+  | 'none'
+  | 'scale-down'
+  | 'unset'
+  | 'inherit'
+  | 'initial'
+  | 'revert'
+  | 'revert-layer'
   width?: number | string
   height?: number | string
   minWidth?: number | string
@@ -2407,6 +2610,7 @@ export interface PropsWidget {
   maxWidth?: number | string
   maxHeight?: number | string
   margin?: number | string
+  verticalAlign?: number | string
   marginTop?: number | string
   marginRight?: number | string
   marginBottom?: number | string
@@ -2428,16 +2632,19 @@ export interface PropsWidget {
   outline?: string
   color?: string
   image?: string
+  fontStyle?: string
   background?: string
   backgroundColor?: string
   backgroundImage?: string
-  backgroundSize?: string
+  backgroundSize?: string | number
   backgroundPosition?: string
   backgroundRepeat?: string
   filter?: string
+  backdrop?: boolean
   backdropFilter?: string
   inset?: number | string | undefined
   size?: number | string
+  ellipsis?: number | string
   fontSize?: number | string
   fontWeight?: string | number
   weight?: string | number
@@ -2465,7 +2672,7 @@ export interface PropsWidget {
   elevation?: number
   transform?: any
   whiteSpace?: string
-  shadow?: boolean
+  shadow?: boolean | string
   fullscreen?: boolean
   modal?: boolean
   userSelect?: string
@@ -2478,6 +2685,7 @@ export interface PropsWidget {
   confirm?: boolean
   loading?: boolean
   icon?: any
+  iconColor?: any
   borderTopLeftRadius?: number
   borderTopRightRadius?: number
   borderBottomLeftRadius?: number
@@ -2487,6 +2695,7 @@ export interface PropsWidget {
   borderTopColor?: string
   borderBottomColor?: string
   to?: string
+  pointerEvents?: any
 }
 
 export function applyStyles(style: any, option: any) {
@@ -2504,7 +2713,11 @@ export function applyStyles(style: any, option: any) {
   }
 
   if (option.shadow) {
-    style.boxShadow = '0 1px 5px rgba(0, 0, 0, 0.12), 0 1px 5px rgba(0, 0, 0, 0.24)'
+    if (typeof option.shadow == "string") {
+      style.boxShadow = option.shadow;
+    } else {
+      style.boxShadow = '0 1px 5px rgba(0, 0, 0, 0.12), 0 1px 5px rgba(0, 0, 0, 0.24)'
+    }
   }
 
   // Layout Properties
@@ -2622,6 +2835,7 @@ export function applyStyles(style: any, option: any) {
 
   // opacity
   if (option.opacity != undefined) style.opacity = parseInt(option.opacity)
+  if (option.fontStyle) style.fontStyle = option.fontStyle;
 
   // Overflow
   if (option.overflow) style.overflow = option.overflow
@@ -2656,6 +2870,62 @@ export function applyStyles(style: any, option: any) {
   // Filter
   if (option.filter) style.filter = option.filter
   if (option.backdropFilter) style.backdropFilter = option.backdropFilter
+
+  if (option.crossAxisAlignment != undefined) {
+    style.display = 'flex';
+    switch (option.crossAxisAlignment) {
+      case 'start':
+        style.alignItems = 'flex-start';
+        break;
+      case 'end':
+        style.alignItems = 'flex-end';
+        break;
+      case 'center':
+        style.alignItems = 'center';
+        break;
+      case 'baseline':
+        style.alignItems = 'baseline';
+        break;
+      case 'stretch':
+        style.alignItems = 'stretch';
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (option.mainAxisAlignment != undefined) {
+    style.display = 'flex';
+    switch (option.mainAxisAlignment) {
+      case 'start':
+        style.justifyContent = 'flex-start';
+        break;
+      case 'end':
+        style.justifyContent = 'flex-end';
+        break;
+      case 'center':
+        style.justifyContent = 'center';
+        break;
+      case 'spaceBetween':
+        style.justifyContent = 'space-between';
+        break;
+      case 'spaceAround':
+        style.justifyContent = 'space-around';
+        break;
+      case 'spaceEvenly':
+        style.justifyContent = 'space-evenly';
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (option.ellipsis) {
+    style.overflow = 'hidden';
+    style.textOverflow = 'ellipsis';
+    style.whiteSpace = 'nowrap';
+    style.width = typeof option.ellipsis === 'number' ? `${option.ellipsis}px` : option.ellipsis;
+  }
 
   return style
 }

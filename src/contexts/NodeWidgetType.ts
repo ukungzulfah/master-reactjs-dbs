@@ -1,8 +1,12 @@
 export enum NodeWidgetType {
+  Comment,
   IncomingRequest,
   Token,
-  Core,
+  CoreRequest,
   Convert,
+  Cipher,
+  NSEncript,
+  Cache,
   Success,
   Error,
   Message,
@@ -13,6 +17,26 @@ export enum NodeWidgetType {
   Notification,
   Firebase,
   Email,
+  DatabaseRequest,
+  Condition,
+  Storage,
+  Function,
+  Transform,
+  Switch,
+  Delay,
+  Loop,
+  Group,
+  ValidateParams,
+  Retry,
+  Catch,
+  Cron,
+  Router,
+  Service,
+  Limit,
+  Default,
+
+
+  End,
 };
 
 export interface DataWidget {
@@ -23,6 +47,8 @@ export interface DataWidget {
   description: string;
   option: any;
   editor?: any;
+  router?: boolean;
+  disabled?: boolean;
 };
 
 export interface DataNode {
@@ -43,4 +69,5 @@ export interface DataNode {
   width: number;
   height: number;
   close?: Function;
+  config?: any;
 };

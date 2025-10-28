@@ -1,0 +1,13 @@
+services:
+  prod:
+    container_name: repi-dashboard-prod
+    image: gcr.io/project-digital-admedika/repi-dashboard-prod:1.0.0
+    build:
+      context: .
+      target: prod
+      platforms:
+        - linux/amd64
+    environment:
+      NODE_ENV: production
+    ports:
+      - "80:80"

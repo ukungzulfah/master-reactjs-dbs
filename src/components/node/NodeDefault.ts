@@ -1,64 +1,44 @@
-import { Center, Click, Column, Container, Divider, Expanded, IconMui, ListItemText, Menu, MenuItem, Positioned, Row, Rows, SizedBox, Stack, Text, Widget } from "../../System/Lib/Widgets";
+import { Center, CircularProgress, Click, Column, Container, Expanded, IconMui, Positioned, Row, SizedBox, Stack, Text, Widget } from "../../System/Lib/Widgets";
 import { DataNode, DataWidget } from "../../contexts/NodeWidgetType";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../store";
-import { selectNode } from "../../store/editor/flowSlice";
 import { HandleConfig } from "./HandleConfig";
 import SettingsIcon from '@mui/icons-material/Settings';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CreateIcon from '@mui/icons-material/Create';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+// import BugReportIcon from '@mui/icons-material/BugReport';
 import NodeEditor from "./NodeEditor";
-import { datawidget } from "../../layouts/editor/EditorRight";
+import storeNode from "../../context/storeNode";
+import { colorStatus } from "./colorStatus";
+import storeLogging from "../../context/storeLogging";
+import storeEnvirontment from "../../context/storeEnvirontment";
+import { contextMenu } from "./contextMenu";
 
 const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right", "bottom"]) => {
-  const nodeWidget = datawidget.filter(x => x.type === datacustom.data.type)[0];
-  const editor = nodeWidget.editor;
-
-  const dispatch = useDispatch();
   const data: DataWidget = datacustom.data;
-  const selectedNode = useSelector((state: RootState) => state.flow.selectedNode);
+  const store = storeNode();
+  const logging = storeLogging();
+  const storeEnv = storeEnvirontment();
+
+  const loggings = logging.state.logging;
+  let isNodeStart = loggings.find((log) => log.type === "node_start" && log.nodeId === datacustom.id);
+  let isNodeEnd = loggings.find((log) => log.type === "node_complete" && log.nodeId === datacustom.id);
+  let allComplete = loggings.every((log) => log.type === "flow_end");
+  let isWorking = isNodeStart && !isNodeEnd;
+  if(allComplete) {
+    isWorking = false;
+  }
+
+  const disabled = data.option.disabled;
 
   return Container({
     color: 'transparent',
     width: 250,
     height: 100,
     cursor: "default",
+    transform: store.state.focusNode?.id == datacustom.id ? 'scale(1.25)' : (isWorking ? 'scale(1.25)' : 'unset'),
+    transition: 'all 0.3s ease-in-out',
     onClick: () => {
-      dispatch(selectNode(datacustom));
+      store.setFocus(datacustom);
+      store.selectNode(datacustom);
     },
-    onContextMenu: (e: any) => {
-      const menu = Menu(e, {
-        anchorPosition: { left: e.clientX + 2, top: e.clientY - 6 },
-        children: [
-          { label: "Run Flow", icon: IconMui(PlayArrowIcon, {color: "green"}) },
-          { label: "Debug Flow", icon: IconMui(BugReportIcon, {color: "blue"}) },
-          { label: "Edit Flow", icon: IconMui(CreateIcon, {color: "black"}) },
-          "divider",
-          { label: "Delete Edge", icon: IconMui(TrendingUpIcon, {color: "red"}) },
-          { label: "Delete Node", icon: IconMui(RemoveCircleOutlineIcon, {color: "red"}) },
-        ].map((item: any) => {
-          if (item === "divider") {
-            return Divider({ width: 200 });
-          }
-          return MenuItem({
-            onClick: () => menu.unMounting(),
-            child: ListItemText({
-              child: Row({
-                children: [
-                  item.icon
-                    ? Container({ width: 30, child: item.icon })
-                    : SizedBox({ width: 30 }),
-                  Text(item.label)
-                ]
-              })
-            })
-          });
-        })
-      });
-    },
+    onContextMenu: (e: any) => contextMenu(e, datacustom, store, storeEnv, logging),
     child: Column({
       children: [
         Expanded({
@@ -67,10 +47,10 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
               SizedBox({ width: 10 }),
               Widget(HandleConfig, { handles: handleConfig }),
               Expanded({
-                color: "white",
+                color: store.state.focusNode?.id == datacustom.id ? store.state.colorNode : (isWorking ? colorStatus.running : (disabled ? "#707070" : 'white')),
                 radius: 10,
                 shadow: true,
-                border: `3px solid ${selectedNode?.id == datacustom.id ? 'yellow' : 'transparent'}`,
+                // border: `3px solid ${selectedNode?.id == datacustom.id ? 'yellow' : 'transparent'}`,
                 child: Row({
                   children: [
                     Expanded({
@@ -84,29 +64,50 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
                               Container({
                                 width: 40,
                                 height: 40,
-                                background: `url(${data.image}) no-repeat center center`,
-                                backgroundSize: 'cover',
+                                child: Stack({
+                                  children: [
+                                    Container({
+                                      background: `url(${data.image}) no-repeat center center`,
+                                      backgroundSize: 'cover',
+                                    }),
+                                    isWorking
+                                      ? Positioned({
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Container({
+                                          width: 40,
+                                          height: 40,
+                                          child: CircularProgress({ size: 40 }),
+                                        })
+                                      }
+                                      )
+                                      : null
+                                  ]
+                                })
                               }),
                               SizedBox({ width: 10 }),
                               Column({
                                 justifyContent: "center",
                                 children: [
                                   Text(data.label, { fontWeight: "bold" }),
-                                  Text(data.description, { size: 12 }),
+                                  Text(data.description, { size: 12, ellipsis: 140 }),
                                 ]
                               })
                             ]
                           }),
-                          !editor ? null : Positioned({
+                          // !editor ? null : Positioned({
+                          Positioned({
                             right: 3,
                             top: 3,
                             child: Click({
                               click: () => {
+                                store.setFocus(datacustom);
+                                store.selectNode(datacustom);
                                 NodeEditor(datacustom);
                               },
                               child: IconMui(SettingsIcon, { fontColor: "black", size: 20 })
                             })
-                          })
+                          }),
                         ]
                       })
                     })
@@ -122,7 +123,8 @@ const NodeDefault = (datacustom: DataNode, handleConfig = ["left", "top", "right
             Expanded({
               padding: 5,
               child: Center({
-                child: Text(data.label, { color: 'white' })
+                child: Text(data.option.name, { color: 'white' })
+                // child: Text("if error", { color: 'red', size: 10 })
               })
             })
           ]

@@ -1,20 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { Root, Widget } from '../../System/Lib/Widgets';
-import { RootState } from '../../store';
-import { useSelector } from 'react-redux';
 import { buildTreeInverted } from '../../utils/buildTreeInverted';
+import storeNode from '../../context/storeNode';
 
 function EditorCode() {
-  const nodes = useSelector((state: RootState) => state.flow.nodes);
-  const edges = useSelector((state: RootState) => state.flow.edges);
+  const store = storeNode();
+  const nodes = store.state.nodes;
+  const edges = store.state.edges;
   const data = buildTreeInverted({ nodes, edges });
 
   const [code, setCode] = useState(JSON.stringify(data, null, 2));
+  const editorRef = useRef<any>(null);
 
   const handleEditorChange = (value: any) => {
     setCode(value);
   };
+
+  const handleEditorMount = (editor: any, _: any) => {
+    console.log("Editor mounted");
+    editorRef.current = editor;
+  };
+  
+  useEffect(() => {
+    return () => {
+      if (editorRef.current) {
+        editorRef.current.dispose();
+        editorRef.current = null;
+        console.log("Editor disposed on unmount");
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const newCode = JSON.stringify(buildTreeInverted({ nodes, edges }), null, 2);
+    if (newCode !== code) {
+      setCode(newCode);
+    }
+  }, [store.state.nodes]);
 
   return Root({
     child: Widget(Editor, {
@@ -23,7 +46,9 @@ function EditorCode() {
       theme: 'vs-dark',
       value: code,
       onChange: handleEditorChange,
+      onMount: handleEditorMount,
       options: {
+        readOnly: true,
         minimap: { enabled: false },
         wordWrap: 'on',
         fontSize: 14,

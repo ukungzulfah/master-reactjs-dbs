@@ -16,3 +16,43 @@ my-app/
 │── .env                 # Environment variables
 │── package.json         # Dependencies & scripts
 │── README.md            # Dokumentasi proyek
+
+
+
+
+Request: 
+    Method: Method
+    Bearer:
+
+Request: 
+    Method: Method
+    Key: 
+
+Core IT:
+    Method: 
+    EndPoint:
+    Body:
+
+Convert:
+    List: 
+        FieldName_Old => FieldName_New
+
+Error:  
+    Map:
+        Code => Message
+
+Log:
+    Request
+    Response
+
+Response OK:
+    Data
+    Message
+    Reponse Code
+
+docker compose build prod && docker compose push prod && gcloud run deploy repi-fe --image gcr.io/project-digital-admedika/repi-dashboard-prod:1.0.0 --platform managed --region asia-southeast2 --allow-unauthenticated --port 80 --project project-digital-admedika
+
+
+
+kFy8Lo903Bfab5ah4yaYUWfVhdnSP82c21KUYdE5uVk=
+Sj3lTh1cB4kkBdoOilgHbPFOR3ezuGs4yelKTUklATA=

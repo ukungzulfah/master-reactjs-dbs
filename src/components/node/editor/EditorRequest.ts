@@ -1,212 +1,112 @@
-import { useState } from "react";
-import { Column, Container, Expanded, Text, Rows, Button, Center, Space, SingleChildScrollView, Icon, Menu, ListItemText, MenuItem, Stack, Widget, Row, Positioned } from "../../../System/Lib/Widgets";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../../store";
-import { setNodesFromState } from "../../../store/editor/flowSlice";
-import { DataNode } from "../../../contexts/NodeWidgetType";
+import { Widget } from "../../../System/Lib/Widgets";
+import { DataNode, NodeWidgetType } from "../../../contexts/NodeWidgetType";
+import { FlowHandler } from '../../widget/FlowHandler'
+import { FormFlow } from "../../../utils/FormFlow";
+import { AbstractFlowRequest } from "../../../utils/AbstractFlowRequest";
+import incoming from './../../../assets/icon/incoming-request.png';
 
+const requestConfig = {
+  fields: [
+    {
+      "key": "name",
+      "label": "Flow Name",
+      "type": "text",
+      "default": "Request",
+      "desc": "Nama unik untuk mengenali endpoint request ini di workflow."
+    },
+    {
+      "key": "method",
+      "label": "HTTP Method",
+      "type": "select",
+      "options": [
+        {
+          "label": "GET",
+          "description": "Retrieves data from the server."
+        },
+        {
+          "label": "POST",
+          "description": "Creates new data on the server."
+        },
+        {
+          "label": "PUT",
+          "description": "Updates existing data on the server."
+        },
+        {
+          "label": "PATCH",
+          "description": "Partially updates existing data on the server."
+        },
+        {
+          "label": "DELETE",
+          "description": "Deletes data from the server."
+        }
+      ],
+      "default": "GET",
+      "desc": "Jenis HTTP method yang diterima untuk trigger workflow."
+    },
+    {
+      "key": "auth_required",
+      "label": "Require Authentication",
+      "type": "boolean",
+      "default": false,
+      "desc": "Apakah endpoint ini memerlukan autentikasi."
+    },
+    {
+      "key": "enable_cors",
+      "label": "Enable CORS",
+      "type": "boolean",
+      "default": false,
+      "desc": "Mengizinkan akses dari origin berbeda."
+    },
+    {
+      "key": "output_type",
+      "label": "Output Variable",
+      "type": "source",
+      "default": "",
+      "desc": "Tentukan output dari request ini ke dalam variabel"
+    },
+    {
+      "key": "disabled",
+      "label": "Disabled Process",
+      "type": "boolean",
+      "default": false,
+      "desc": "Aktifkan atau nonaktifkan proses"
+    },
+  ]
+};
 
-export default function EditorRequest(dataNode: DataNode) {
-  return Container({
-    child: Stack({
-      children: [
-        Container({
-          color: "#000000bf",
-          child: Row({
-            children: [
-              Expanded({
-                marginLeft: 50,
-                marginTop: 50,
-                marginBottom: 50,
-                shadow: true,
-                borderTopLeftRadius: 20,
-                borderBottomLeftRadius: 20,
-                child: Container({
-                  color: "white"
-                })
-              }),
-              Container({
-                width: 500,
-                color: "white",
-                shadow: true,
-                display: "flex",
-                marginTop: 20,
-                marginBottom: 20,
-                radius: 10,
-                child: Editor(dataNode)
-              }),
-              Expanded({
-                marginRight: 50,
-                marginTop: 50,
-                marginBottom: 50,
-                shadow: true,
-                borderTopRightRadius: 20,
-                borderBottomRightRadius: 20,
-                child: Container({
-                  color: "white"
-                })
-              }),
-            ]
-          })
-        }),
-      ]
-    })
-  });
-}
+/**
+ * Ini adalah flow untuk Incoming Request
+ */
 
-function Editor(dataNode: DataNode) {
-  const dispatch = useDispatch();
-  const nodes = useSelector((state: RootState) => state.flow.nodes);
-  const data = nodes.filter((x: any) => x.id == dataNode.id)[0].data;
-  const [method, setMethod] = useState(data.option?.method || "GET");
+@FlowHandler('Request')
+export default class FlowRequest extends AbstractFlowRequest {
+  public id = "Request";
+  public label = "Request";
+  public description = "Incoming Request Flow";
+  public image = incoming;
+  public type = NodeWidgetType.IncomingRequest;
+  public option = {};
 
-  const root = () => Positioned({
-    left: 50,
-    top: 50,
-    width: 460,
-    height: 500,
-    child: Column({
-      children: [
-        Container({
-          height: 70,
-          child: Rows({
-            children: [
-              Container({
-                width: 70,
-                child: Container({
-                  width: 50,
-                  height: 50,
-                  margin: 15,
-                  background: `url(${data.image}) no-repeat center center`,
-                  backgroundSize: 'cover',
-                })
-              }),
-              Space(10),
-              Expanded({
-                child: Column({
-                  justifyContent: "center",
-                  children: [
-                    Text(data.label, { fontWeight: "bold", fontSize: 20 }),
-                    Text(data.description, { fontSize: 12 })
-                  ]
-                })
-              }),
-              Container({
-                child: Center({
-                  child: Container({
-                    height: 35,
-                    child: Button("Test Nodes", {
-                      confirm: true,
-                      // icon: "bug_report",
-                      click: () => {
-                        const newNode = nodes.map((node: any) => {
-                          if (node.id == dataNode.id) {
-                            return {
-                              ...node,
-                              data: {
-                                ...node.data,
-                                option: {
-                                  ...node.data.option,
-                                  method: method
-                                }
-                              }
-                            };
-                          }
-                          return node;
-                        });
-                        dispatch(setNodesFromState(newNode));
-                        if(dataNode.close) {
-                          dataNode.close();
-                        }
-                      }
-                    })
-                  })
-                })
-              }),
-              Space(20)
-            ]
-          })
-        }),
-        Expanded({
-          child: SingleChildScrollView({
-            child: Column({
-              padding: 20,
-              children: [
-                Text("Method", { fontWeight: "bold", fontSize: 16 }),
-                Space(5),
-                Container({
-                  padding: 10,
-                  border: "1px solid #555",
-                  radius: 5,
-                  onClick: (e: any) => {
-                    const menu = Menu(e, {
-                      children: [
-                        {
-                          "label": "GET",
-                          "description": "Retrieves data from the server."
-                        },
-                        {
-                          "label": "POST",
-                          "description": "Creates new data on the server."
-                        },
-                        {
-                          "label": "PUT",
-                          "description": "Updates existing data on the server."
-                        },
-                        {
-                          "label": "PATCH",
-                          "description": "Partially updates existing data on the server."
-                        },
-                        {
-                          "label": "DELETE",
-                          "description": "Deletes data from the server."
-                        }
-                       ].map((item, i) => {
-                        return MenuItem({
-                          key: "menu-" + i,
-                          width: 460,
-                          onClick: () => {
-                            menu.unMounting();
-                            setMethod(item.label);
-                          },
-                          child: ListItemText({
-                            child: Rows({
-                              children: [
-                                Expanded({
-                                  child: Column({
-                                    children: [
-                                      Text(item.label, {fontWeight: "bold"}),
-                                      Text(item.description),
-                                    ]
-                                  })
-                                })
-                              ]
-                            }),
-                          })
-                        });
-                      })
-                    });
-                  },
-                  child: Rows({
-                    children: [
-                      Expanded({
-                        child: Center({
-                          justifyContent: "start",
-                          child: Text(method, {fontWeight: "bold"})
-                        })
-                      }),
-                      Icon("keyboard_arrow_down"),
-                      Space(5),
-                    ]
-                  })
-                })
-              ]
-            })
-          })
-        }),
-      ]
-    })
-  }).builder();
+  constructor() {
+    super();
+    this.option = {
+      name: "request",
+      method: "POST",
+      auth_required: false,
+      enable_cors: false
+    };
+  }
 
-  return Widget(root);
+  editor(dataNode: DataNode) {
+    const Comp = () => FormFlow(dataNode, { config: requestConfig });
+    return Widget(Comp, dataNode);
+  }
+
+  toSerialize() {
+    return super.toSerialize();
+  }
+
+  fromJson(data: any): void {
+    super.fromJson(data);
+  }
 }
